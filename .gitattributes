@@ -1,0 +1,26 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+gradlew text eol=lf
+
+# Gradle wrapper jar must stay binary
+gradle/wrapper/gradle-wrapper.jar binary
+
+# Common binary types
+*.png binary
+*.jpg binary
+*.webp binary
+*.onnx binary
+*.gguf binary
+*.jar binary
+*.aar binary
+*.apk binary
+*.aab binary
+*.so binary
+*.dex binary
+*.keystore binary
+*.jks binary
+
+# Golden fixtures must stay LF (cross-OS test stability — see T03)
+core-domain/src/test/resources/golden/** text eol=lf

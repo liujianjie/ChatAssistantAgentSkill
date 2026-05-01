@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(cd * && python *)",
+      "Bash(cd * && cat *)",
+      "Bash(cd * && echo *)",
+      "Bash(cat > *)",
+      "Bash(echo * > *)",
+      "Bash(cat *)",
+      "Bash(for *)",
+      "Bash(grep *)",
+      "Bash(tail *)",
+      "Bash(seq *)",
+      "Bash(if *)",
+      "Bash(OUTPUT_FILE=*)",
+      "Bash(sleep *)",
+      "Bash(rm -f *Temp/*)",
+      "Bash(curl -s *127.0.0.1:8090*)",
+      "Bash(curl -s --connect-timeout * http://127.0.0.1:8090*)",
+      "Bash(*.bat *)",
+      "Bash(call *.bat *)",
+      "Bash(cmd /c *.bat *)"
+    ]
+  }
+}
