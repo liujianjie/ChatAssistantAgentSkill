@@ -15,6 +15,12 @@ android {
 }
 
 dependencies {
+    // SecureKeyStore contract lives in core-domain — never reach upward.
+    implementation(project(":core-domain"))
+
+    // Coroutines for off-main-thread keystore I/O.
+    implementation(libs.kotlinx.coroutines.android)
+
     // SecureKeyStore implementation — backed by AndroidX EncryptedSharedPrefs.
     implementation(libs.androidx.security.crypto)
 
