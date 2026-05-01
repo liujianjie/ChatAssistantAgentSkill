@@ -87,7 +87,10 @@ node_modules/
 # === Project working dirs ===
 audit/
 .tmp-research/
-data/
+# Anchored to repo root — bare `data/` would also match nested src
+# directories like `core-data/src/main/kotlin/com/stylemirror/core/data/`,
+# which silently swallowed every file under that namespace until 2026-05-01.
+/data/
 
 # === Real chat data (PRIVACY RED LINE) ===
 # Real chat exports MUST NOT enter the repo. Only synthetic
