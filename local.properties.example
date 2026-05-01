@@ -1,0 +1,13 @@
+# Copy this file to `local.properties` and fill in your local paths.
+# `local.properties` is gitignored — never commit it.
+
+# Path to your Android SDK installation.
+# On this dev machine the SDK lives at:
+#   D:\1softanddate\3professionsoft\androidsdk
+# Use forward slashes or escape backslashes (Gradle reads this as Java properties).
+sdk.dir=D:/1softanddate/3professionsoft/androidsdk
+
+# Optional: path where Gradle stores downloaded distributions and caches.
+# Recommended location is OFF the C: drive to avoid filling the system disk.
+# Configure as an environment variable instead of here:
+#   setx GRADLE_USER_HOME F:\.gradle-cache

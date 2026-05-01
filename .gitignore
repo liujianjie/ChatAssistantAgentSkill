@@ -1,0 +1,98 @@
+# ============================================================
+# Style Mirror Copilot — root .gitignore
+# Privacy red line: never commit secrets, real chat data, or
+# user-specific local config. See CLAUDE.md 密钥铁律.
+# ============================================================
+
+# === Secrets / credentials (privacy red line) ===
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.jks
+*.keystore
+secrets.*
+credentials.*
+*token*.json
+*.token
+
+# === Local dev config ===
+local.properties
+!local.properties.example
+
+# === Claude Code per-machine state (do not share) ===
+.claude/settings.local.json
+.claude/agent-memory/
+.claude/.tmp/
+.claude/plans/
+
+# === Gradle ===
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+
+# === Android ===
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+output.json
+release/
+proguard/
+
+# === Kotlin ===
+*.kotlin_module
+
+# === IntelliJ / Android Studio ===
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# === VS Code ===
+.vscode/
+
+# === macOS / Windows / Linux ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Editor swap ===
+*.swp
+*.swo
+*~
+
+# === Python (legacy from prior repo state) ===
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# === Node (legacy) ===
+node_modules/
+
+# === Project working dirs ===
+audit/
+.tmp-research/
+data/
+
+# === Real chat data (PRIVACY RED LINE) ===
+# Real chat exports MUST NOT enter the repo. Only synthetic
+# fixtures under core-domain/src/test/resources/golden/ are allowed.
+*.chat
+*.wechatbak
+real_chats/
+imports/
