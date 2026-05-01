@@ -31,7 +31,13 @@
 - [x] **T04** infra-net + SecureKeyStore [M] — deps: T01, T02
   - [x] NetworkModule（OkHttp 双 client：候选 5+8s / 默认 30s）+ RedactingHttpLogger（Authorization/Cookie/api-key 脱敏）
   - [x] SecureKeyStore（core-domain 接口 + EncryptedSharedPreferences 实现 + Robolectric 9 项单测）
-- [ ] **T05** LLMProvider 抽象 + DeepSeek 实现 + Fake [M] — deps: T04
+- [x] **T05** LLMProvider 抽象 + DeepSeek 实现 + Fake [M] — deps: T04
+  - schema：`Candidate(text, rationale?, tokens?)` + `LLMProvider` 接口（宽 DomainError 错误通道）
+  - DeepSeekProvider：SecureKeyStore 取 Key，HTTP 状态映射 AUTH/RATE_LIMITED/SERVER_ERROR/TIMEOUT/INVALID_RESPONSE/KEY_MISSING
+  - FakeLLMProvider（默认 3 候选，可注入响应）+ Claude/Qwen Stub（NotImplemented）
+  - integrationTest 独立 sourceSet，env var STYLEMIRROR_DEEPSEEK_KEY 守门，缺则 SKIP
+  - ADR-0002 docs/adr/0002-llm-provider-strategy.md
+  - 副产物：infra-net + infra-llm 切 kotlin-jvm（无 Android 使用、整仓 task 数 -80）
 - [~] **T06** InputAdapter 抽象 + PasteInput [S] — deps: T02, T03
   - [x] InputAdapter contract + PasteInput 解析（覆盖单行/多行/alias/continuation/cross-device）
   - [x] Overlay/Screenshot/ShareSheet stub（仅 contract surface，等 T08/T17 接平台胶水）
