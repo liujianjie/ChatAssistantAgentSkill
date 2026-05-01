@@ -1,0 +1,45 @@
+id: 02-1on1-emoji-mixed
+description: |
+  1:1 chat heavy on emoji and Chinese-English code-switching. Style profiling
+  must not lose the emoji frequency signal, and speaker alignment must not be
+  fooled by emoji-only lines.
+my_aliases:
+  - Lily
+partner_id: bf-han
+expected_style_cues:
+  - 高频使用 emoji（笑脸/哭笑/比心）
+  - 中英文混排，常用 ok/cool/awsl
+  - 喜欢用感叹号与省略号
+messages:
+  - { speaker: me,     id: m-01, sent_at: 2025-03-02T20:01:00Z, content: "晚上好呀😄" }
+  - { speaker: theirs, id: t-01, display_name: 阿杰, sent_at: 2025-03-02T20:01:30Z, content: "嗨" }
+  - { speaker: me,     id: m-02, sent_at: 2025-03-02T20:02:00Z, content: "今天看到一只猫超可爱🐱😍" }
+  - { speaker: theirs, id: t-02, display_name: 阿杰, sent_at: 2025-03-02T20:02:30Z, content: "图呢" }
+  - { speaker: me,     id: m-03, sent_at: 2025-03-02T20:03:00Z, content: "马上发！😆" }
+  - { speaker: theirs, id: t-03, display_name: 阿杰, sent_at: 2025-03-02T20:03:30Z, content: "ok" }
+  - { speaker: me,     id: m-04, sent_at: 2025-03-02T20:04:00Z, content: "[图片占位]" }
+  - { speaker: theirs, id: t-04, display_name: 阿杰, sent_at: 2025-03-02T20:04:30Z, content: "awsl" }
+  - { speaker: me,     id: m-05, sent_at: 2025-03-02T20:05:00Z, content: "对吧对吧😭超治愈" }
+  - { speaker: theirs, id: t-05, display_name: 阿杰, sent_at: 2025-03-02T20:05:30Z, content: "cool" }
+  - { speaker: me,     id: m-06, sent_at: 2025-03-02T20:06:00Z, content: "你今天 work 完啦？" }
+  - { speaker: theirs, id: t-06, display_name: 阿杰, sent_at: 2025-03-02T20:06:30Z, content: "刚下班" }
+  - { speaker: me,     id: m-07, sent_at: 2025-03-02T20:07:00Z, content: "辛苦辛苦💪" }
+  - { speaker: theirs, id: t-07, display_name: 阿杰, sent_at: 2025-03-02T20:07:30Z, content: "还好" }
+  - { speaker: me,     id: m-08, sent_at: 2025-03-02T20:08:00Z, content: "周末要不要去逛展呀🎨" }
+  - { speaker: theirs, id: t-08, display_name: 阿杰, sent_at: 2025-03-02T20:08:30Z, content: "哪个展" }
+  - { speaker: me,     id: m-09, sent_at: 2025-03-02T20:09:00Z, content: "新开的 design week 哦～" }
+  - { speaker: theirs, id: t-09, display_name: 阿杰, sent_at: 2025-03-02T20:09:30Z, content: "票价" }
+  - { speaker: me,     id: m-10, sent_at: 2025-03-02T20:10:00Z, content: "学生票 50 还行吧" }
+  - { speaker: theirs, id: t-10, display_name: 阿杰, sent_at: 2025-03-02T20:10:30Z, content: "okok" }
+  - { speaker: me,     id: m-11, sent_at: 2025-03-02T20:11:00Z, content: "那就周六见啦😘" }
+  - { speaker: theirs, id: t-11, display_name: 阿杰, sent_at: 2025-03-02T20:11:30Z, content: "好" }
+  - { speaker: me,     id: m-12, sent_at: 2025-03-02T20:12:00Z, content: "记得带相机哦📷" }
+  - { speaker: theirs, id: t-12, display_name: 阿杰, sent_at: 2025-03-02T20:12:30Z, content: "知道" }
+  - { speaker: me,     id: m-13, sent_at: 2025-03-02T20:13:00Z, content: "嘿嘿期待了……✨" }
+  - { speaker: theirs, id: t-13, display_name: 阿杰, sent_at: 2025-03-02T20:13:30Z, content: "嗯" }
+  - { speaker: me,     id: m-14, sent_at: 2025-03-02T20:14:00Z, content: "对了你 lunch 吃了什么？" }
+  - { speaker: theirs, id: t-14, display_name: 阿杰, sent_at: 2025-03-02T20:14:30Z, content: "外卖盖饭" }
+  - { speaker: me,     id: m-15, sent_at: 2025-03-02T20:15:00Z, content: "啊好朴素哈哈🤣" }
+  - { speaker: theirs, id: t-15, display_name: 阿杰, sent_at: 2025-03-02T20:15:30Z, content: "图便宜" }
+  - { speaker: me,     id: m-16, sent_at: 2025-03-02T20:16:00Z, content: "哈哈也是😂晚安喵🌙" }
+  - { speaker: theirs, id: t-16, display_name: 阿杰, sent_at: 2025-03-02T20:16:30Z, content: "晚安" }

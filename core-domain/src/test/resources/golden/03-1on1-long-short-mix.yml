@@ -1,0 +1,86 @@
+id: 03-1on1-long-short-mix
+description: |
+  1:1 chat with strong asymmetry — Me writes long paragraphs, partner replies in
+  one or two characters. Tests that style profiling weights message length
+  correctly and does not collapse short acks into noise.
+my_aliases:
+  - 老王
+partner_id: colleague-zhao
+expected_style_cues:
+  - 长段落表达，信息密度高
+  - 倾向给出背景/原因/结论三段式
+  - 礼貌但克制，少用语气助词
+messages:
+  - speaker: me
+    id: m-01
+    sent_at: 2025-03-03T09:00:00Z
+    content: |
+      早上好。昨天的会议纪要我整理了一份初稿，主要包含三块：一是 Q2 目标对齐，二是
+      关键依赖排期，三是风险登记。等会儿你方便看一下吗。
+  - { speaker: theirs, id: t-01, display_name: 赵工, sent_at: 2025-03-03T09:01:30Z, content: 好 }
+  - speaker: me
+    id: m-02
+    sent_at: 2025-03-03T09:03:00Z
+    content: |
+      关于风险这一块我想多说两句。我把"模型推理冷启动"列为 P1，原因是我们目前没有
+      预热机制，首次请求可能会超过 8 秒，这对体验是硬伤。建议本周先评估缓存策略。
+  - { speaker: theirs, id: t-02, display_name: 赵工, sent_at: 2025-03-03T09:05:00Z, content: 同意 }
+  - speaker: me
+    id: m-03
+    sent_at: 2025-03-03T09:06:00Z
+    content: |
+      还有一点。我们和数据团队的接口约定昨天没敲定，我倾向先用 protobuf，理由是
+      未来跨平台扩展友好。如果你那边没异议，今天下午我就和他们对一下。
+  - { speaker: theirs, id: t-03, display_name: 赵工, sent_at: 2025-03-03T09:08:00Z, content: 可以 }
+  - { speaker: me,     id: m-04, sent_at: 2025-03-03T09:09:00Z, content: 好的。 }
+  - { speaker: theirs, id: t-04, display_name: 赵工, sent_at: 2025-03-03T09:10:00Z, content: 嗯 }
+  - speaker: me
+    id: m-05
+    sent_at: 2025-03-03T09:15:00Z
+    content: |
+      纪要刚发到群里了，麻烦审阅。如果有补充直接在文档评论就好，避免群里刷屏。
+  - { speaker: theirs, id: t-05, display_name: 赵工, sent_at: 2025-03-03T09:16:00Z, content: 收到 }
+  - { speaker: me,     id: m-06, sent_at: 2025-03-03T09:30:00Z, content: 另外周三晚有空吗 }
+  - { speaker: theirs, id: t-06, display_name: 赵工, sent_at: 2025-03-03T09:31:00Z, content: 有 }
+  - speaker: me
+    id: m-07
+    sent_at: 2025-03-03T09:32:00Z
+    content: |
+      想约你和组里同学吃个饭，顺便聊一下下半年的方向。地点我来定，预算公司报一半
+      自掏一半，到时候 AA 一下也行。你看哪天合适。
+  - { speaker: theirs, id: t-07, display_name: 赵工, sent_at: 2025-03-03T09:34:00Z, content: 周四 }
+  - { speaker: me,     id: m-08, sent_at: 2025-03-03T09:35:00Z, content: 周四好的，我去问问其他人。 }
+  - { speaker: theirs, id: t-08, display_name: 赵工, sent_at: 2025-03-03T09:36:00Z, content: 嗯 }
+  - speaker: me
+    id: m-09
+    sent_at: 2025-03-03T10:00:00Z
+    content: |
+      关于答辩 PPT，我看了你昨晚发的版本。整体没大问题，建议两处调整：第 7 页的对比
+      实验加一栏 baseline，第 12 页的结论可以前置到摘要去，这样面试官更容易抓重点。
+  - { speaker: theirs, id: t-09, display_name: 赵工, sent_at: 2025-03-03T10:02:00Z, content: 收到 }
+  - { speaker: me,     id: m-10, sent_at: 2025-03-03T10:03:00Z, content: 不用客气。 }
+  - { speaker: theirs, id: t-10, display_name: 赵工, sent_at: 2025-03-03T10:04:00Z, content: 嗯 }
+  - speaker: me
+    id: m-11
+    sent_at: 2025-03-03T10:30:00Z
+    content: |
+      还有件事提醒一下。下周一开始预算冻结，所以这两天该走的报销和采购流程要赶紧
+      提，别等到月底再来加急。
+  - { speaker: theirs, id: t-11, display_name: 赵工, sent_at: 2025-03-03T10:31:00Z, content: 好 }
+  - { speaker: me,     id: m-12, sent_at: 2025-03-03T11:00:00Z, content: 中午一起吃 }
+  - { speaker: theirs, id: t-12, display_name: 赵工, sent_at: 2025-03-03T11:01:00Z, content: 行 }
+  - speaker: me
+    id: m-13
+    sent_at: 2025-03-03T11:02:00Z
+    content: |
+      楼下面馆可以吗，他家最近换了厨子。不行就老地方。
+  - { speaker: theirs, id: t-13, display_name: 赵工, sent_at: 2025-03-03T11:03:00Z, content: 面馆 }
+  - { speaker: me,     id: m-14, sent_at: 2025-03-03T11:04:00Z, content: 那 12 点电梯口见。 }
+  - { speaker: theirs, id: t-14, display_name: 赵工, sent_at: 2025-03-03T11:04:30Z, content: 好 }
+  - speaker: me
+    id: m-15
+    sent_at: 2025-03-03T13:00:00Z
+    content: |
+      下午的 stand-up 我可能晚十分钟，先和数据团队对完接口再来。需要我提前同步进度
+      吗。
+  - { speaker: theirs, id: t-15, display_name: 赵工, sent_at: 2025-03-03T13:01:30Z, content: 不用 }

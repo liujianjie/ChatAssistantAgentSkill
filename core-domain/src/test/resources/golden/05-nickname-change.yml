@@ -1,0 +1,48 @@
+id: 05-nickname-change
+description: |
+  Me's own visible nickname changes mid-thread (alias swap from "小明" to "M.J.").
+  Speaker alignment must not flip Me into Theirs just because the visible label
+  changed. Tests T12's reliance on user-supplied alias set rather than literal
+  display names.
+my_aliases:
+  - 小明
+  - M.J.
+  - 明哥
+partner_id: roommate-yan
+expected_style_cues:
+  - 说话直接，少铺垫
+  - 偶尔用方言词（"咋整""得嘞"）
+  - 多用问号结尾推动对话
+messages:
+  - { speaker: me,     id: m-01, display_name: 小明, sent_at: 2025-03-05T07:30:00Z, content: 你起床了？ }
+  - { speaker: theirs, id: t-01, display_name: 闫子, sent_at: 2025-03-05T07:30:30Z, content: 起了 }
+  - { speaker: me,     id: m-02, display_name: 小明, sent_at: 2025-03-05T07:31:00Z, content: 早饭吃啥？ }
+  - { speaker: theirs, id: t-02, display_name: 闫子, sent_at: 2025-03-05T07:31:30Z, content: 包子 }
+  - { speaker: me,     id: m-03, display_name: 小明, sent_at: 2025-03-05T07:32:00Z, content: 给我带俩？ }
+  - { speaker: theirs, id: t-03, display_name: 闫子, sent_at: 2025-03-05T07:32:30Z, content: 啥馅 }
+  - { speaker: me,     id: m-04, display_name: 小明, sent_at: 2025-03-05T07:33:00Z, content: 猪肉大葱 }
+  - { speaker: theirs, id: t-04, display_name: 闫子, sent_at: 2025-03-05T07:33:30Z, content: 行 }
+  - { speaker: me,     id: m-05, display_name: 小明, sent_at: 2025-03-05T08:00:00Z, content: 到家没？ }
+  - { speaker: theirs, id: t-05, display_name: 闫子, sent_at: 2025-03-05T08:00:30Z, content: 路上 }
+  - { speaker: me,     id: m-06, display_name: 小明, sent_at: 2025-03-05T08:30:00Z, content: 我把昵称改了 }
+  - { speaker: theirs, id: t-06, display_name: 闫子, sent_at: 2025-03-05T08:30:30Z, content: 改啥 }
+  - { speaker: me,     id: m-07, display_name: M.J., sent_at: 2025-03-05T08:31:00Z, content: M.J.  }
+  - { speaker: theirs, id: t-07, display_name: 闫子, sent_at: 2025-03-05T08:31:30Z, content: 装啥 }
+  - { speaker: me,     id: m-08, display_name: M.J., sent_at: 2025-03-05T08:32:00Z, content: 哈哈不就酷一点？ }
+  - { speaker: theirs, id: t-08, display_name: 闫子, sent_at: 2025-03-05T08:32:30Z, content: 行行 }
+  - { speaker: me,     id: m-09, display_name: M.J., sent_at: 2025-03-05T09:00:00Z, content: 包子带回来没？ }
+  - { speaker: theirs, id: t-09, display_name: 闫子, sent_at: 2025-03-05T09:00:30Z, content: 在桌上 }
+  - { speaker: me,     id: m-10, display_name: M.J., sent_at: 2025-03-05T09:01:00Z, content: 得嘞 }
+  - { speaker: theirs, id: t-10, display_name: 闫子, sent_at: 2025-03-05T09:01:30Z, content: 嗯 }
+  - { speaker: me,     id: m-11, display_name: M.J., sent_at: 2025-03-05T12:00:00Z, content: 中午回来吃吗？ }
+  - { speaker: theirs, id: t-11, display_name: 闫子, sent_at: 2025-03-05T12:00:30Z, content: 不回 }
+  - { speaker: me,     id: m-12, display_name: M.J., sent_at: 2025-03-05T12:01:00Z, content: 咋整？我做多了 }
+  - { speaker: theirs, id: t-12, display_name: 闫子, sent_at: 2025-03-05T12:01:30Z, content: 留着晚上 }
+  - { speaker: me,     id: m-13, display_name: M.J., sent_at: 2025-03-05T18:00:00Z, content: 晚饭吃？ }
+  - { speaker: theirs, id: t-13, display_name: 闫子, sent_at: 2025-03-05T18:00:30Z, content: 加班 }
+  - { speaker: me,     id: m-14, display_name: M.J., sent_at: 2025-03-05T18:01:00Z, content: 别累着？ }
+  - { speaker: theirs, id: t-14, display_name: 闫子, sent_at: 2025-03-05T18:01:30Z, content: 嗯 }
+  - { speaker: me,     id: m-15, display_name: 明哥, sent_at: 2025-03-05T22:00:00Z, content: 又改了一次昵称 }
+  - { speaker: theirs, id: t-15, display_name: 闫子, sent_at: 2025-03-05T22:00:30Z, content: 你能不能消停 }
+  - { speaker: me,     id: m-16, display_name: 明哥, sent_at: 2025-03-05T22:01:00Z, content: 哈哈最后一次 }
+  - { speaker: theirs, id: t-16, display_name: 闫子, sent_at: 2025-03-05T22:01:30Z, content: 信你才怪 }

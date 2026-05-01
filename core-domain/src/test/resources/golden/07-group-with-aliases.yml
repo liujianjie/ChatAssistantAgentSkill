@@ -1,0 +1,54 @@
+id: 07-group-with-aliases
+description: |
+  Group chat where Me's nickname appears under three aliases ("Lily" / "Lily🌿"
+  / "莉莉") AND there are four other participants — one of whom shares a similar
+  prefix ("Liam"). Stress test for alias-collision in T12 speaker alignment.
+my_aliases:
+  - Lily
+  - "Lily🌿"
+  - 莉莉
+partner_id: book-club-cn
+expected_style_cues:
+  - 善于引用书中具体段落与页码
+  - 在群里偏好分点表达，使用"1/2/3"列举
+  - 较少使用感叹号
+metadata:
+  alias_collision_warning: "Liam vs Lily — first character similar"
+messages:
+  - { speaker: me,     id: m-01, display_name: Lily, sent_at: 2025-03-07T20:00:00Z, content: 大家好 本月读书会开始 }
+  - { speaker: theirs, id: t-01, display_name: Liam, sent_at: 2025-03-07T20:00:30Z, content: 来了 }
+  - { speaker: theirs, id: t-02, display_name: 老王, sent_at: 2025-03-07T20:00:45Z, content: 在 }
+  - { speaker: theirs, id: t-03, display_name: 小红, sent_at: 2025-03-07T20:01:00Z, content: 在的 }
+  - { speaker: theirs, id: t-04, display_name: 阿杰, sent_at: 2025-03-07T20:01:15Z, content: 来了 }
+  - { speaker: me,     id: m-02, display_name: Lily, sent_at: 2025-03-07T20:02:00Z, content: 今天讨论第三章 三个角度 }
+  - { speaker: me,     id: m-03, display_name: Lily, sent_at: 2025-03-07T20:02:30Z, content: 1 叙事视角 2 时间结构 3 隐喻系统 }
+  - { speaker: theirs, id: t-05, display_name: Liam, sent_at: 2025-03-07T20:03:00Z, content: 我对 1 有想法 }
+  - { speaker: theirs, id: t-06, display_name: 老王, sent_at: 2025-03-07T20:03:30Z, content: 我谈 3 }
+  - { speaker: me,     id: m-04, display_name: Lily, sent_at: 2025-03-07T20:04:00Z, content: 那 Liam 先开始 }
+  - { speaker: theirs, id: t-07, display_name: Liam, sent_at: 2025-03-07T20:04:30Z, content: 我觉得叙事视角的切换在第 47 页最明显 }
+  - { speaker: me,     id: m-05, display_name: "Lily🌿", sent_at: 2025-03-07T20:05:00Z, content: 同感 第 47 页第二段 作者用了第二人称 }
+  - { speaker: theirs, id: t-08, display_name: 小红, sent_at: 2025-03-07T20:05:30Z, content: 是的有点突兀 }
+  - { speaker: me,     id: m-06, display_name: "Lily🌿", sent_at: 2025-03-07T20:06:00Z, content: 突兀但有效 拉近距离 }
+  - { speaker: theirs, id: t-09, display_name: 阿杰, sent_at: 2025-03-07T20:06:30Z, content: 像在质问读者 }
+  - { speaker: me,     id: m-07, display_name: "Lily🌿", sent_at: 2025-03-07T20:07:00Z, content: 没错 }
+  - { speaker: theirs, id: t-10, display_name: Liam, sent_at: 2025-03-07T20:07:30Z, content: 时间结构上呢 }
+  - { speaker: me,     id: m-08, display_name: "Lily🌿", sent_at: 2025-03-07T20:08:00Z, content: 我觉得是嵌套的回忆 三层 }
+  - { speaker: theirs, id: t-11, display_name: 小红, sent_at: 2025-03-07T20:08:30Z, content: 三层是哪三层 }
+  - { speaker: me,     id: m-09, display_name: "Lily🌿", sent_at: 2025-03-07T20:09:00Z, content: 现在 童年 战争前夕 }
+  - { speaker: theirs, id: t-12, display_name: 阿杰, sent_at: 2025-03-07T20:09:30Z, content: 我觉得还有梦境 }
+  - { speaker: me,     id: m-10, display_name: "Lily🌿", sent_at: 2025-03-07T20:10:00Z, content: 算第四层吧 但比较模糊 }
+  - { speaker: theirs, id: t-13, display_name: 老王, sent_at: 2025-03-07T20:10:30Z, content: 隐喻这块 玻璃出现了七次 }
+  - { speaker: me,     id: m-11, display_name: 莉莉, sent_at: 2025-03-07T20:11:00Z, content: 我换了个昵称 还是我 }
+  - { speaker: theirs, id: t-14, display_name: Liam, sent_at: 2025-03-07T20:11:30Z, content: 知道 }
+  - { speaker: me,     id: m-12, display_name: 莉莉, sent_at: 2025-03-07T20:12:00Z, content: 玻璃七次的具体位置可以列一下 }
+  - { speaker: theirs, id: t-15, display_name: 老王, sent_at: 2025-03-07T20:12:30Z, content: 12 27 41 53 68 91 104 }
+  - { speaker: me,     id: m-13, display_name: 莉莉, sent_at: 2025-03-07T20:13:00Z, content: 谢谢 我对照看一下 }
+  - { speaker: theirs, id: t-16, display_name: 阿杰, sent_at: 2025-03-07T20:13:30Z, content: 我觉得玻璃是脆弱的隐喻 }
+  - { speaker: theirs, id: t-17, display_name: 小红, sent_at: 2025-03-07T20:14:00Z, content: 也可能是隔阂 }
+  - { speaker: me,     id: m-14, display_name: 莉莉, sent_at: 2025-03-07T20:14:30Z, content: 两层都成立 }
+  - { speaker: theirs, id: t-18, display_name: Liam, sent_at: 2025-03-07T20:15:00Z, content: 时间不早了 收尾吧 }
+  - { speaker: me,     id: m-15, display_name: 莉莉, sent_at: 2025-03-07T20:15:30Z, content: 总结一下 1 视角切换强化代入 2 时间嵌套三层 3 玻璃象征脆弱与隔阂 }
+  - { speaker: theirs, id: t-19, display_name: 老王, sent_at: 2025-03-07T20:16:00Z, content: 收 }
+  - { speaker: theirs, id: t-20, display_name: 阿杰, sent_at: 2025-03-07T20:16:30Z, content: 收 }
+  - { speaker: theirs, id: t-21, display_name: 小红, sent_at: 2025-03-07T20:17:00Z, content: 下次见 }
+  - { speaker: me,     id: m-16, display_name: 莉莉, sent_at: 2025-03-07T20:17:30Z, content: 下月再约 }

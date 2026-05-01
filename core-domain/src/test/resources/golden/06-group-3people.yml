@@ -1,0 +1,48 @@
+id: 06-group-3people
+description: |
+  Group chat with three other participants. Speaker alignment must distinguish
+  Me from three distinct Theirs identities and not collapse them. Style profiling
+  must filter out non-Me messages even when they're conversationally interleaved.
+my_aliases:
+  - 小明
+partner_id: hiking-group
+expected_style_cues:
+  - 在群里更克制，单条偏短
+  - 喜欢做"召集者"角色，发起话题与定时间
+  - 善于收尾，给出总结性确认
+messages:
+  - { speaker: me,     id: m-01, sent_at: 2025-03-06T19:00:00Z, content: 各位 周末爬山的事再确认一下 }
+  - { speaker: theirs, id: t-01, display_name: 小红, sent_at: 2025-03-06T19:00:30Z, content: 我可以 }
+  - { speaker: theirs, id: t-02, display_name: 阿杰, sent_at: 2025-03-06T19:00:45Z, content: 我也可以 }
+  - { speaker: theirs, id: t-03, display_name: Lily, sent_at: 2025-03-06T19:01:00Z, content: count me in }
+  - { speaker: me,     id: m-02, sent_at: 2025-03-06T19:01:30Z, content: 那就周六七点出发 }
+  - { speaker: theirs, id: t-04, display_name: 小红, sent_at: 2025-03-06T19:02:00Z, content: 集合点呢 }
+  - { speaker: me,     id: m-03, sent_at: 2025-03-06T19:02:30Z, content: 西门口地铁 }
+  - { speaker: theirs, id: t-05, display_name: 阿杰, sent_at: 2025-03-06T19:03:00Z, content: ok }
+  - { speaker: theirs, id: t-06, display_name: Lily, sent_at: 2025-03-06T19:03:30Z, content: 我可能晚十分钟 }
+  - { speaker: me,     id: m-04, sent_at: 2025-03-06T19:04:00Z, content: 没问题 我们等你 }
+  - { speaker: theirs, id: t-07, display_name: 小红, sent_at: 2025-03-06T19:04:30Z, content: 装备清单要不要发一下 }
+  - { speaker: me,     id: m-05, sent_at: 2025-03-06T19:05:00Z, content: 一会儿我整理 }
+  - { speaker: theirs, id: t-08, display_name: 阿杰, sent_at: 2025-03-06T19:05:30Z, content: 我有登山杖可以借一根 }
+  - { speaker: theirs, id: t-09, display_name: Lily, sent_at: 2025-03-06T19:06:00Z, content: 带几瓶水 }
+  - { speaker: me,     id: m-06, sent_at: 2025-03-06T19:06:30Z, content: 每人至少 1.5L }
+  - { speaker: theirs, id: t-10, display_name: 小红, sent_at: 2025-03-06T19:07:00Z, content: 收到 }
+  - { speaker: me,     id: m-07, sent_at: 2025-03-06T19:08:00Z, content: 路线选小环线 难度低 }
+  - { speaker: theirs, id: t-11, display_name: 阿杰, sent_at: 2025-03-06T19:08:30Z, content: 上次那条 }
+  - { speaker: me,     id: m-08, sent_at: 2025-03-06T19:09:00Z, content: 是的 }
+  - { speaker: theirs, id: t-12, display_name: Lily, sent_at: 2025-03-06T19:09:30Z, content: 全程多久 }
+  - { speaker: me,     id: m-09, sent_at: 2025-03-06T19:10:00Z, content: 大概四小时 }
+  - { speaker: theirs, id: t-13, display_name: 小红, sent_at: 2025-03-06T19:10:30Z, content: 中午饭呢 }
+  - { speaker: me,     id: m-10, sent_at: 2025-03-06T19:11:00Z, content: 山顶吃自带的 }
+  - { speaker: theirs, id: t-14, display_name: 阿杰, sent_at: 2025-03-06T19:11:30Z, content: 我带寿司 }
+  - { speaker: theirs, id: t-15, display_name: Lily, sent_at: 2025-03-06T19:12:00Z, content: 三明治➕ }
+  - { speaker: me,     id: m-11, sent_at: 2025-03-06T19:12:30Z, content: 我带水果和坚果 }
+  - { speaker: theirs, id: t-16, display_name: 小红, sent_at: 2025-03-06T19:13:00Z, content: 我带泡面 }
+  - { speaker: me,     id: m-12, sent_at: 2025-03-06T19:13:30Z, content: 哈哈泡面爬山经典 }
+  - { speaker: theirs, id: t-17, display_name: 阿杰, sent_at: 2025-03-06T19:14:00Z, content: 还要带炉子 }
+  - { speaker: theirs, id: t-18, display_name: 小红, sent_at: 2025-03-06T19:14:30Z, content: 没事 我有 }
+  - { speaker: me,     id: m-13, sent_at: 2025-03-06T19:15:00Z, content: 那就这样 周六见 }
+  - { speaker: theirs, id: t-19, display_name: Lily, sent_at: 2025-03-06T19:15:30Z, content: 周六见 }
+  - { speaker: theirs, id: t-20, display_name: 阿杰, sent_at: 2025-03-06T19:15:45Z, content: 周六见 }
+  - { speaker: theirs, id: t-21, display_name: 小红, sent_at: 2025-03-06T19:16:00Z, content: 周六见 }
+  - { speaker: me,     id: m-14, sent_at: 2025-03-06T19:16:30Z, content: 收到 }

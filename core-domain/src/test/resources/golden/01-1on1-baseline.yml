@@ -1,0 +1,45 @@
+id: 01-1on1-baseline
+description: |
+  Baseline 1:1 chat between Me and a friend over a single afternoon. Establishes
+  the simplest case for speaker alignment and style profiling — no nickname
+  changes, no group noise, no emoji-heavy patterns.
+my_aliases:
+  - 小明
+partner_id: alex-pal
+expected_style_cues:
+  - 句末偏好"吧/呀/啊"等语气助词
+  - 短句为主，单条多在 5–15 字
+  - 使用"哈哈""嗯嗯"作为情绪反馈
+messages:
+  - { speaker: me,     id: m-01, sent_at: 2025-03-01T14:00:00Z, content: 在吗 }
+  - { speaker: theirs, id: t-01, display_name: 小红, sent_at: 2025-03-01T14:00:40Z, content: 在的呀 }
+  - { speaker: me,     id: m-02, sent_at: 2025-03-01T14:01:05Z, content: 周末有空吗 }
+  - { speaker: theirs, id: t-02, display_name: 小红, sent_at: 2025-03-01T14:01:30Z, content: 周日下午可以 }
+  - { speaker: me,     id: m-03, sent_at: 2025-03-01T14:02:00Z, content: 那约个咖啡馆吧 }
+  - { speaker: theirs, id: t-03, display_name: 小红, sent_at: 2025-03-01T14:02:25Z, content: 你定地点 }
+  - { speaker: me,     id: m-04, sent_at: 2025-03-01T14:03:10Z, content: 老地方那家可以吗 }
+  - { speaker: theirs, id: t-04, display_name: 小红, sent_at: 2025-03-01T14:03:35Z, content: 行 }
+  - { speaker: me,     id: m-05, sent_at: 2025-03-01T14:04:00Z, content: 那就两点见啊 }
+  - { speaker: theirs, id: t-05, display_name: 小红, sent_at: 2025-03-01T14:04:30Z, content: 好的 }
+  - { speaker: me,     id: m-06, sent_at: 2025-03-01T14:05:00Z, content: 你最近忙什么呢 }
+  - { speaker: theirs, id: t-06, display_name: 小红, sent_at: 2025-03-01T14:05:40Z, content: 在准备一个项目答辩 }
+  - { speaker: me,     id: m-07, sent_at: 2025-03-01T14:06:00Z, content: 哦哦加油啊 }
+  - { speaker: theirs, id: t-07, display_name: 小红, sent_at: 2025-03-01T14:06:25Z, content: 谢啦 }
+  - { speaker: me,     id: m-08, sent_at: 2025-03-01T14:07:00Z, content: 大概啥时候答辩 }
+  - { speaker: theirs, id: t-08, display_name: 小红, sent_at: 2025-03-01T14:07:30Z, content: 下周三 }
+  - { speaker: me,     id: m-09, sent_at: 2025-03-01T14:08:00Z, content: 那周日见正好放松一下 }
+  - { speaker: theirs, id: t-09, display_name: 小红, sent_at: 2025-03-01T14:08:30Z, content: 是的 }
+  - { speaker: me,     id: m-10, sent_at: 2025-03-01T14:09:00Z, content: 顺便给你看个东西 }
+  - { speaker: theirs, id: t-10, display_name: 小红, sent_at: 2025-03-01T14:09:30Z, content: 啥呀 }
+  - { speaker: me,     id: m-11, sent_at: 2025-03-01T14:10:00Z, content: 一本书 我觉得你会喜欢 }
+  - { speaker: theirs, id: t-11, display_name: 小红, sent_at: 2025-03-01T14:10:30Z, content: 好啊期待 }
+  - { speaker: me,     id: m-12, sent_at: 2025-03-01T14:11:00Z, content: 嗯嗯到时候带过去 }
+  - { speaker: theirs, id: t-12, display_name: 小红, sent_at: 2025-03-01T14:11:30Z, content: 嗯 }
+  - { speaker: me,     id: m-13, sent_at: 2025-03-01T14:12:30Z, content: 你那边天气咋样 }
+  - { speaker: theirs, id: t-13, display_name: 小红, sent_at: 2025-03-01T14:13:00Z, content: 阴天有点冷 }
+  - { speaker: me,     id: m-14, sent_at: 2025-03-01T14:13:30Z, content: 周日记得多穿点哈 }
+  - { speaker: theirs, id: t-14, display_name: 小红, sent_at: 2025-03-01T14:14:00Z, content: 好 }
+  - { speaker: me,     id: m-15, sent_at: 2025-03-01T14:15:00Z, content: 哈哈那先这样我去忙了 }
+  - { speaker: theirs, id: t-15, display_name: 小红, sent_at: 2025-03-01T14:15:30Z, content: 嗯嗯拜拜 }
+  - { speaker: me,     id: m-16, sent_at: 2025-03-01T14:16:00Z, content: 拜 }
+  - { speaker: theirs, id: t-16, display_name: 小红, sent_at: 2025-03-01T14:16:30Z, content: 周日见 }
