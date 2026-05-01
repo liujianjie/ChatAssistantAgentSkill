@@ -9,7 +9,12 @@
 
 ## Phase 1 — M0 项目骨架
 
-- [ ] **T01** build-logic + 多模块 Gradle 骨架 + CI [M] — deps: 无
+- [~] **T01** build-logic + 多模块 Gradle 骨架 + CI [M] — deps: 无
+  - [x] S1 root Gradle skeleton + wrapper (Tencent mirror, GRADLE_USER_HOME=F:/.gradle-cache)
+  - [ ] S2 build-logic convention plugins (需要 SDK)
+  - [ ] S3 注册 13 模块
+  - [ ] S4 app 空 Application + Activity
+  - [ ] S5 CI workflow + ./gradlew check 全绿
 - [ ] **T02** core-domain 数据模型 + DomainError [M] — deps: T01
 - [ ] **T03** Golden fixtures + 测试基础设施 [S] — deps: T02
 
