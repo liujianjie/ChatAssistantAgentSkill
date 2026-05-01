@@ -7,7 +7,7 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 /**
  * Static-analysis baseline: ktlint + detekt applied to every module so the
- * 13-module graph stays consistent. Module-specific suppressions go in
+ * 10-module graph stays consistent. Module-specific suppressions go in
  * config/detekt/detekt.yml, not here.
  */
 internal fun Project.configureQuality() {

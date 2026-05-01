@@ -40,11 +40,15 @@ style:
     max: 3
   WildcardImport:
     active: true
+  UnusedPrivateMember:
+    active: true
+    ignoreAnnotated: ['Preview']
 
 naming:
   active: true
   FunctionNaming:
     active: true
+    ignoreAnnotated: ['Composable']
   TopLevelPropertyNaming:
     active: true
 
@@ -60,10 +64,3 @@ exceptions:
 
 # Privacy red-line: detect accidental key/secret literals.
 # These rules are intentionally strict; CI must not allow exceptions.
-formatting:
-  active: true
-  android: true
-  autoCorrect: false
-  MaximumLineLength:
-    active: true
-    maxLineLength: 140

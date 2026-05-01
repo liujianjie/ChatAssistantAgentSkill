@@ -6,7 +6,7 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 
 /**
- * Convention for Android library modules — most of the 13 modules in the graph
+ * Convention for Android library modules — 8 of the 10 application modules
  * (core-data, infra-net, infra-llm, infra-ocr, feature-*, platform-*).
  */
 class AndroidLibraryConventionPlugin : Plugin<Project> {
