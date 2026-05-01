@@ -28,9 +28,14 @@
 
 ## Phase 2 — M1 最短闭环
 
-- [ ] **T04** infra-net + SecureKeyStore [M] — deps: T01, T02
+- [~] **T04** infra-net + SecureKeyStore [M] — deps: T01, T02
+  - [x] NetworkModule（OkHttp 双 client：候选 5+8s / 默认 30s）+ RedactingHttpLogger（Authorization/Cookie/api-key 脱敏）
+  - [ ] SecureKeyStore（EncryptedSharedPreferences）+ keystore 单测
 - [ ] **T05** LLMProvider 抽象 + DeepSeek 实现 + Fake [M] — deps: T04
-- [ ] **T06** InputAdapter 抽象 + PasteInput [S] — deps: T02, T03
+- [~] **T06** InputAdapter 抽象 + PasteInput [S] — deps: T02, T03
+  - [x] InputAdapter contract + PasteInput 解析（覆盖单行/多行/alias/continuation/cross-device）
+  - [x] Overlay/Screenshot/ShareSheet stub（仅 contract surface，等 T08/T17 接平台胶水）
+  - [ ] T06 收口：jacoco ≥ 80% PasteInput + 真机粘贴源接入 T08
 - [ ] **T07** 候选生成器 + Fake StyleEngine + 隐私护栏 [M] — deps: T05, T06
 - [ ] **T08** app Compose UI 最短闭环 + 反馈占位 [M] — deps: T05, T06, T07
 
