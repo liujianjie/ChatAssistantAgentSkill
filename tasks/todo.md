@@ -28,9 +28,9 @@
 
 ## Phase 2 — M1 最短闭环
 
-- [~] **T04** infra-net + SecureKeyStore [M] — deps: T01, T02
+- [x] **T04** infra-net + SecureKeyStore [M] — deps: T01, T02
   - [x] NetworkModule（OkHttp 双 client：候选 5+8s / 默认 30s）+ RedactingHttpLogger（Authorization/Cookie/api-key 脱敏）
-  - [ ] SecureKeyStore（EncryptedSharedPreferences）+ keystore 单测
+  - [x] SecureKeyStore（core-domain 接口 + EncryptedSharedPreferences 实现 + Robolectric 9 项单测）
 - [ ] **T05** LLMProvider 抽象 + DeepSeek 实现 + Fake [M] — deps: T04
 - [~] **T06** InputAdapter 抽象 + PasteInput [S] — deps: T02, T03
   - [x] InputAdapter contract + PasteInput 解析（覆盖单行/多行/alias/continuation/cross-device）
