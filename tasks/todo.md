@@ -11,7 +11,7 @@
 
 - [~] **T01** build-logic + 多模块 Gradle 骨架 + CI [M] — deps: 无
   - [x] S1 root Gradle skeleton + wrapper (Tencent mirror, GRADLE_USER_HOME=F:/.gradle-cache)
-  - [ ] S2 build-logic convention plugins (需要 SDK)
+  - [x] S2 build-logic convention plugins (KotlinJvm/AndroidLibrary/AndroidApplication/AndroidCompose + ktlint/detekt + libs.versions.toml)
   - [ ] S3 注册 13 模块
   - [ ] S4 app 空 Application + Activity
   - [ ] S5 CI workflow + ./gradlew check 全绿
