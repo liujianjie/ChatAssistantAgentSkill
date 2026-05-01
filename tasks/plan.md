@@ -17,7 +17,7 @@
 
 ## 2. Architecture Decisions（沿用 SPEC §1.6 / §3.2）
 
-- **多模块**：13 个模块（详见 SPEC §3.1），按层 + 按能力切分，core-domain 不依赖 Android。
+- **多模块**：10 个应用模块（详见 SPEC §3.1）+ build-logic，按层 + 按能力切分，core-domain 不依赖 Android。
 - **DI**：Hilt（与 Compose/ViewModel 集成成熟）；模块间通过接口暴露，build-logic 控制可见性。
 - **持久化**：Room + SQLCipher（加密 DB），API Key 走 EncryptedSharedPreferences；不进 settings.json/log/git。
 - **LLM 默认 DeepSeek，保留 Claude/Qwen 切换**：通过 `LLMProvider` 抽象 + 运行时可切换的实现注册表。
@@ -67,7 +67,7 @@ build-logic (gradle convention plugins)
 ### Phase 1 — M0 项目骨架
 
 #### T01：build-logic + 多模块 Gradle 骨架 + CI
-**Description**：建立 13 模块的 Gradle 骨架，配 Kotlin 2.x、Java 17 toolchain、ktlint、detekt、Android Lint，CI 入口为 `./gradlew check`。`app` 模块只放空 `Application` + 单一空 Activity。
+**Description**：建立 10 模块的 Gradle 骨架，配 Kotlin 2.x、Java 17 toolchain、ktlint、detekt、Android Lint，CI 入口为 `./gradlew check`。`app` 模块只放空 `Application` + 单一空 Activity。
 **Acceptance criteria**：
 - [ ] `./gradlew assembleDebug` 成功，APK 可装到模拟器但仅显示空白页
 - [ ] `./gradlew check` 全绿（ktlint/detekt/lint/test 已跑，0 失败）

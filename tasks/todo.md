@@ -9,14 +9,20 @@
 
 ## Phase 1 — M0 项目骨架
 
-- [~] **T01** build-logic + 多模块 Gradle 骨架 + CI [M] — deps: 无
+- [x] **T01** build-logic + 多模块 Gradle 骨架 + CI [M] — deps: 无
   - [x] S1 root Gradle skeleton + wrapper (Tencent mirror, GRADLE_USER_HOME=F:/.gradle-cache)
   - [x] S2 build-logic convention plugins (KotlinJvm/AndroidLibrary/AndroidApplication/AndroidCompose + ktlint/detekt + libs.versions.toml)
-  - [ ] S3 注册 13 模块
-  - [ ] S4 app 空 Application + Activity
-  - [ ] S5 CI workflow + ./gradlew check 全绿
-- [ ] **T02** core-domain 数据模型 + DomainError [M] — deps: T01
-- [ ] **T03** Golden fixtures + 测试基础设施 [S] — deps: T02
+  - [x] S3 注册 10 模块（settings.gradle.kts include + 各模块 build.gradle.kts 应用 convention plugin）
+  - [x] S4 app 空 Application + Activity（StyleMirrorApp + MainActivity Compose 占位 + Manifest/资源/启动图）
+  - [x] S5 CI workflow + ./gradlew check 全绿（.github/workflows/ci.yml；本地 BUILD SUCCESSFUL）
+- [x] **T02** core-domain 数据模型 + DomainError [M] — deps: T01
+  - schema：sealed Message + Mine/Theirs（编译期红线）；6 维 StyleFingerprint；DomainError + Outcome；FeedbackSignal
+  - jacoco 覆盖率 95% INSTRUCTION / 98% BRANCH（target ≥85%）
+  - ADR-0001 docs/adr/0001-style-fingerprint-schema.md
+- [x] **T03** Golden fixtures + 测试基础设施 [S] — deps: T02
+  - 7 段 YAML fixture（30+ 条/段，覆盖跨设备/群聊/昵称变更/长短混合/Emoji 中英混排）
+  - GoldenLoader（SnakeYAML SafeConstructor）+ 8 项烟雾测试（含 PII 正则护栏）
+  - .gitattributes 已锁 LF；README 写明"禁真实数据"红线
 
 **Checkpoint M0**：`./gradlew check` 全绿、APK 装机、fixture 入库无真实数据、人工评审
 

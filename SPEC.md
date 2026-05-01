@@ -42,6 +42,7 @@
 ### 1.6 显式 Phase 2 / Phase 3（不是"不做"，是"延后做"）
 - **P1**：Accessibility 悬浮窗、系统分享 sheet、微信日常使用层适配、复盘报告、多账号画像合并。
 - **P2**：虚拟人预演、反向筛选器、PDF 学习、其他平台、本地小模型选项。
+- **P2 跨端扩展**：在 Android Kotlin 主干**旁边**新建 UniApp/Taro 项目做微信小程序 + Web/PWA 轻量版（仅 P0 最短闭环子集：粘贴 → 候选 → 复制）。Android 不切换、不替换；画像跨端用手动 JSON 导入导出，不做云同步。详见 [docs/ideas/cross-platform-strategy.md](docs/ideas/cross-platform-strategy.md)。
 
 ---
 
