@@ -19,6 +19,15 @@ dependencyResolutionManagement {
 
 rootProject.name = "style-mirror-copilot"
 
-// Modules will be registered in T01-S3 (Slice 3).
-// Slice 1 keeps the root build runnable on its own so `./gradlew help` works
-// before any module / convention plugin is wired up.
+// 10 application modules per SPEC §3.1. Order is informational only — Gradle
+// resolves the dependency graph from each module's build.gradle.kts.
+include(":app")
+include(":core-domain")
+include(":core-data")
+include(":feature-import")
+include(":feature-realtime")
+include(":platform-soul")
+include(":platform-stub")
+include(":infra-llm")
+include(":infra-ocr")
+include(":infra-net")
