@@ -24,5 +24,18 @@ filter_patterns:
   - { pattern: "[小程序]", type: EXACT_CONTENT }
   - { pattern: "[分享]",   type: EXACT_CONTENT }
 
+  # Media placeholders that QQ/WeChat emit when the actual media isn't text-extractable
+  - { pattern: "[图片]",   type: EXACT_CONTENT }
+  - { pattern: "[图片消息]", type: EXACT_CONTENT }
+  - { pattern: "[语音]",   type: EXACT_CONTENT }
+  - { pattern: "[语音消息]", type: EXACT_CONTENT }
+  - { pattern: "[视频]",   type: EXACT_CONTENT }
+  - { pattern: "[视频消息]", type: EXACT_CONTENT }
+  - { pattern: "[文件]",   type: EXACT_CONTENT }
+  - { pattern: "[表情]",   type: EXACT_CONTENT }
+  - { pattern: "[动画表情]", type: EXACT_CONTENT }
+  - { pattern: "[位置]",   type: EXACT_CONTENT }
+  - { pattern: "[名片]",   type: EXACT_CONTENT }
+
   # Bare URL lines (standalone http/https link, no other text)
   - { pattern: "^https?://\\S+$", type: REGEX }
