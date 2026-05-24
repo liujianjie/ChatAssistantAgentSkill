@@ -98,5 +98,5 @@ audit/
 *.chat
 *.wechatbak
 real_chats/
-imports/
+/imports/
 提示词/
