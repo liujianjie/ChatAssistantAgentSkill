@@ -128,8 +128,12 @@ class OnboardingViewModel
                     is Outcome.Ok ->
                         _state.value =
                             OnboardingState.Ready(
-                                fingerprint = result.value,
-                                summary = StyleFingerprintSummary.of(result.value, sampled.totalSampled),
+                                fingerprint = result.value.fingerprint,
+                                summary =
+                                    StyleFingerprintSummary.of(
+                                        result.value.fingerprint,
+                                        sampled.totalSampled,
+                                    ),
                             )
 
                     is Outcome.Err ->

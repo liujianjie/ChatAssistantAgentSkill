@@ -1,5 +1,6 @@
 plugins {
     id("stylemirror.android.library")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -20,6 +21,7 @@ dependencies {
     implementation(project(":infra-ocr"))
     implementation(project(":feature-realtime"))
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.snakeyaml)
 
     testImplementation(libs.junit)

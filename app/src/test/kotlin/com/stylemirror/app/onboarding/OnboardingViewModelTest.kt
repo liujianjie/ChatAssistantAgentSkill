@@ -1,6 +1,8 @@
 package com.stylemirror.app.onboarding
 
+import com.stylemirror.core.data.db.entity.CorpusSampleEntity
 import com.stylemirror.core.data.db.entity.StyleFingerprintEntity
+import com.stylemirror.core.data.repository.CorpusSampleStore
 import com.stylemirror.core.data.repository.StyleFingerprintStore
 import com.stylemirror.domain.candidate.Candidate
 import com.stylemirror.domain.error.DomainError
@@ -24,12 +26,16 @@ import kotlinx.coroutines.test.setMain
 private val VALID_PROFILE_JSON =
     """
     {
-      "linguistic": { "formality": "CASUAL", "vocabularyComplexity": 0.3, "sentencePattern": "SHORT_FRAGMENTED", "signaturePhrases": ["哈哈"] },
-      "emotional":  { "emojiDensity": 2.0, "exclamationFrequency": 0.4, "tone": "BALANCED", "preferredEmojis": ["😄"] },
-      "humor":      { "frequency": 0.5, "types": ["OBSERVATIONAL"] },
-      "avoidance":  { "topicsAvoided": [], "hedgingFrequency": 0.2, "deflectionStrategy": "REDIRECT" },
-      "pacing":     { "avgMessageLength": 25.0, "avgMessagesPerTurn": 1.5, "responseDelay": "MINUTES" },
-      "sensitive":  { "directness": "INDIRECT", "approach": "EMPATHETIC" }
+      "fingerprint": {
+        "linguistic": { "formality": "CASUAL", "vocabularyComplexity": 0.3, "sentencePattern": "SHORT_FRAGMENTED", "signaturePhrases": ["哈哈"] },
+        "emotional":  { "emojiDensity": 2.0, "exclamationFrequency": 0.4, "tone": "BALANCED", "preferredEmojis": ["😄"] },
+        "humor":      { "frequency": 0.5, "types": ["OBSERVATIONAL"] },
+        "avoidance":  { "topicsAvoided": [], "hedgingFrequency": 0.2, "deflectionStrategy": "REDIRECT" },
+        "pacing":     { "avgMessageLength": 25.0, "avgMessagesPerTurn": 1.5, "responseDelay": "MINUTES" },
+        "sensitive":  { "directness": "INDIRECT", "approach": "EMPATHETIC" }
+      },
+      "behavior_rules_md": "## 风格\n- 简短直接",
+      "corpus_samples": []
     }
     """.trimIndent()
 
@@ -51,6 +57,29 @@ private class StubStore : StyleFingerprintStore {
     override suspend fun findByVersion(version: Int) = inserted.firstOrNull { it.version == version }
 
     override suspend fun nextVersion(): Int = inserted.size + 1
+}
+
+private class StubCorpusStore : CorpusSampleStore {
+    val inserted = mutableListOf<CorpusSampleEntity>()
+
+    override suspend fun insertAll(samples: List<CorpusSampleEntity>): List<Long> {
+        inserted += samples
+        return List(samples.size) { it.toLong() }
+    }
+
+    override suspend fun findActiveByVersion(version: Int) =
+        inserted.filter { it.fingerprintVersion == version && it.deletedAtEpochMs == null }
+
+    override suspend fun findAllByVersion(version: Int) = inserted.filter { it.fingerprintVersion == version }
+
+    override fun observeActiveByVersion(version: Int) = emptyFlow<List<CorpusSampleEntity>>()
+
+    override suspend fun softDelete(
+        rowId: Long,
+        nowEpochMs: Long,
+    ) = 0
+
+    override suspend fun undelete(rowId: Long) = 0
 }
 
 private fun corpusOf(messageCount: Int): String =
@@ -117,7 +146,7 @@ class OnboardingViewModelTest : StringSpec({
         runTest(testDispatcher) {
             val store = StubStore()
             val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
-            val vm = newViewModel(PersonaProfiler(llm, store))
+            val vm = newViewModel(PersonaProfiler(llm, store, StubCorpusStore()))
 
             vm.onAliasesChange("我")
             vm.onPasteChange(corpusOf(15))
@@ -136,7 +165,7 @@ class OnboardingViewModelTest : StringSpec({
         runTest(testDispatcher) {
             val store = StubStore()
             val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
-            val vm = newViewModel(PersonaProfiler(llm, store))
+            val vm = newViewModel(PersonaProfiler(llm, store, StubCorpusStore()))
 
             vm.onAliasesChange("我")
             vm.onPasteChange(corpusOf(3)) // only 3 Me messages, below MIN_SAMPLES_REQUIRED=10
@@ -157,7 +186,7 @@ class OnboardingViewModelTest : StringSpec({
                 FakeLLMProvider { _, _ ->
                     Outcome.Err(DomainError.LlmFailure(LlmFailureReason.AUTH))
                 }
-            val vm = newViewModel(PersonaProfiler(llm, store))
+            val vm = newViewModel(PersonaProfiler(llm, store, StubCorpusStore()))
 
             vm.onAliasesChange("我")
             vm.onPasteChange(corpusOf(15))
@@ -177,6 +206,7 @@ class OnboardingViewModelTest : StringSpec({
                 PersonaProfiler(
                     FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) },
                     StubStore(),
+                    StubCorpusStore(),
                 ),
             )
         vm.onAliasesChange("   ")
@@ -187,7 +217,7 @@ class OnboardingViewModelTest : StringSpec({
     "loadFromTextSource 把 source 返回的文本写入 pasteText" {
         runTest(testDispatcher) {
             val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
-            val vm = newViewModel(PersonaProfiler(llm, StubStore()))
+            val vm = newViewModel(PersonaProfiler(llm, StubStore(), StubCorpusStore()))
 
             vm.loadFromTextSource(TextSource { "我：从文件来\n张三：你好" })
             testScheduler.advanceUntilIdle()
@@ -199,7 +229,7 @@ class OnboardingViewModelTest : StringSpec({
     "loadFromTextSource source 抛错时进入 Error 态，包含原因" {
         runTest(testDispatcher) {
             val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
-            val vm = newViewModel(PersonaProfiler(llm, StubStore()))
+            val vm = newViewModel(PersonaProfiler(llm, StubStore(), StubCorpusStore()))
 
             vm.loadFromTextSource(TextSource { error("文件过大（10 MB）") })
             testScheduler.advanceUntilIdle()
@@ -220,7 +250,8 @@ class OnboardingViewModelTest : StringSpec({
                     llmCalls++
                     Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON)))
                 }
-            val vm = newViewModel(PersonaProfiler(llm, store), keyStore = stubKeyStore(apiKey = null))
+            val vm =
+                newViewModel(PersonaProfiler(llm, store, StubCorpusStore()), keyStore = stubKeyStore(apiKey = null))
 
             vm.onAliasesChange("我")
             vm.onPasteChange(corpusOf(15))
@@ -239,7 +270,8 @@ class OnboardingViewModelTest : StringSpec({
         runTest(testDispatcher) {
             val store = StubStore()
             val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
-            val vm = newViewModel(PersonaProfiler(llm, store), keyStore = stubKeyStore(apiKey = "   "))
+            val vm =
+                newViewModel(PersonaProfiler(llm, store, StubCorpusStore()), keyStore = stubKeyStore(apiKey = "   "))
 
             vm.onAliasesChange("我")
             vm.onPasteChange(corpusOf(15))

@@ -80,7 +80,13 @@ object AppModule {
     fun providePersonaProfiler(
         llmProvider: LLMProvider,
         repository: StyleFingerprintStore,
-    ): PersonaProfiler = PersonaProfiler(llmProvider = llmProvider, repository = repository)
+        corpusStore: CorpusSampleStore,
+    ): PersonaProfiler =
+        PersonaProfiler(
+            llmProvider = llmProvider,
+            repository = repository,
+            corpusStore = corpusStore,
+        )
 
     @Provides
     @Singleton
