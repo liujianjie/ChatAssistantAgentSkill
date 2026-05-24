@@ -108,23 +108,13 @@ class MessageSamplerTest : StringSpec({
         MessageSampler.DEFAULT_MAX_SAMPLES shouldBe 2000
     }
 
-    // ---- evenly-spaced sampling distribution --------------------------------
+    // ---- time spread (no recency bias) --------------------------------------
 
-    "evenlySpaced picks first and last elements from a list" {
-        val sampler = MessageSampler()
-        val list = (0..99).toList()
-        val result = sampler.evenlySpaced(list, 10)
-        result shouldHaveSize 10
-        result.first() shouldBe 0 // first bucket
-        result.last() shouldBe 90 // close to end, not past it
-    }
-
-    "evenlySpaced distributes across timeline (no recency bias)" {
-        val sampler = MessageSampler(maxSamples = 10)
+    "sampling distributes across timeline (no recency bias) when budget tight" {
+        val sampler = MessageSampler(maxSamples = 10, maxCharBudget = 10_000)
         val msgs = (0 until 100).map { me("msg$it", it) }
         val result = sampler.sample(msgs)
 
-        // First sampled sourceIndex should be near 0, last near 90
         val indices = result.myMessages.map { it.sourceIndex }
         withClue("first sampled index should be in the first third") {
             (indices.first() <= 33) shouldBe true
@@ -134,16 +124,24 @@ class MessageSamplerTest : StringSpec({
         }
     }
 
-    "evenlySpaced with n == list.size returns full list" {
-        val sampler = MessageSampler()
-        val list = listOf(1, 2, 3, 4, 5)
-        sampler.evenlySpaced(list, 5) shouldBe list
-    }
+    // ---- length preference within buckets -----------------------------------
 
-    "evenlySpaced with n > list.size returns full list" {
-        val sampler = MessageSampler()
-        val list = listOf("a", "b")
-        sampler.evenlySpaced(list, 10) shouldBe list
+    "long messages are preferred over short ones within the same time bucket" {
+        // 30 messages: even indices are short (3 chars), odd are long (50 chars).
+        // Budget tight (200 chars) → only ~6 messages fit. Sampler should
+        // prefer the long ones since they carry more style signal.
+        val sampler = MessageSampler(maxSamples = 100, maxCharBudget = 200)
+        val msgs =
+            (0 until 30).map { i ->
+                val text = if (i % 2 == 0) "嗯哈对" else "x".repeat(50)
+                me(text, i)
+            }
+        val result = sampler.sample(msgs)
+        val longCount = result.myMessages.count { it.content.length == 50 }
+        val shortCount = result.myMessages.count { it.content.length == 3 }
+        withClue("long messages should outnumber short ones at tight budget: long=$longCount short=$shortCount") {
+            (longCount > shortCount) shouldBe true
+        }
     }
 
     // ---- multi-source aggregation (3 partners) ------------------------------

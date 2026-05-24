@@ -5,38 +5,41 @@ import com.stylemirror.feature.imports.alignment.SpeakerLabel
 
 /**
  * Aggregates [AlignedMessage] lists into a [ProfilingInput] safe for
- * [PersonaProfiler] (T14).
+ * [PersonaProfiler] (画像 v2).
  *
  * ## Pipeline
  *
- * 1. **Filter** — retain only messages where speaker == [SpeakerLabel.ME].
- * 2. **Truncate single** — clip any individual message longer than
- *    [maxSingleLength] so a single 5000-char rant doesn't dominate the budget.
- * 3. **Cap by count** — if more than [maxSamples] messages remain, take
- *    [maxSamples] evenly-spaced across the timeline (preserves long-arc style
- *    instead of recency bias).
- * 4. **Cap by characters** — if the total character count still exceeds
- *    [maxCharBudget], drop further to the largest evenly-spaced N that fits
- *    the budget. This is the **token guard** that prevents PersonaProfiler
- *    from blowing up DeepSeek's read timeout on a 700 KB chat history.
+ * 1. **Filter speaker** — keep only [SpeakerLabel.ME].
+ * 2. **Drop pure noise** — [NoiseFilter] removes pure punctuation /
+ *    whitespace / emoji-only / single-char stopword messages. Conservative
+ *    by design (does NOT remove "确实" / "离谱" / "哈哈哈" — those are style).
+ * 3. **Truncate single** — clip any message longer than [maxSingleLength].
+ * 4. **Bucket by time** — the surviving messages are split into [TIME_BUCKETS]
+ *    equal-width buckets so a multi-year conversation is represented across
+ *    the timeline (not biased to the most recent / largest cluster).
+ * 5. **Within each bucket, sort by length DESC** — prefer messages with more
+ *    content, since a 30-char "我觉得这事吧其实没那么..." carries more style
+ *    signal than another "好的".
+ * 6. **Round-robin pick** — take one from each bucket in turn, draining the
+ *    longest first, until either [maxSamples] or [maxCharBudget] is hit.
+ * 7. **Restore time order** — sort the picked set by sourceIndex so the
+ *    profiler sees them chronologically.
  *
- * ## Why TWO caps (count + chars)
+ * ## Why bucket-by-time + length-DESC (instead of evenly-spaced or top-N-longest)
  *
- * Either cap alone is brittle:
- * - count-only: 800 short greetings is fine, but 800 paragraph-length rants
- *   blows past the 90 s LLM read budget.
- * - chars-only: 5 long messages is well under budget but gives the profiler
- *   no breadth.
+ * - Pure evenly-spaced ignored content; budget-trim phase tended to drop
+ *   long messages (they used more budget per slot) — backwards from what
+ *   we want for style signal.
+ * - Pure top-N-longest collapses to one chat era and loses long-arc style
+ *   drift.
+ * - The hybrid keeps long-message preference WITHIN each bucket and
+ *   guarantees time spread ACROSS buckets.
  *
- * The combination guarantees a predictable upper bound on prompt size while
- * still surfacing enough variety.
- *
- * @param maxSamples Hard upper bound on message count (default 2000).
+ * @param maxSamples Hard upper bound on message count.
  * @param maxCharBudget Hard upper bound on total characters across all kept
- *   messages (default 8000 ≈ 4000 中文 tokens — leaves room for prompt
+ *   messages. Default 8000 ≈ 4000 中文 tokens (leaves room for prompt
  *   scaffolding + LLM output).
- * @param maxSingleLength Per-message cap; longer messages are truncated to
- *   this length before sampling (default 400 chars).
+ * @param maxSingleLength Per-message cap before sampling (default 400).
  */
 class MessageSampler(
     val maxSamples: Int = DEFAULT_MAX_SAMPLES,
@@ -50,9 +53,11 @@ class MessageSampler(
     }
 
     fun sample(messages: List<AlignedMessage>): ProfilingInput {
-        val mine =
+        val candidates =
             messages
+                .asSequence()
                 .filter { it.speaker == SpeakerLabel.ME }
+                .filterNot { NoiseFilter.isNoise(it.rawMessage.content) }
                 .map { aligned ->
                     val raw = aligned.rawMessage.content
                     val clipped = if (raw.length > maxSingleLength) raw.take(maxSingleLength) else raw
@@ -62,57 +67,76 @@ class MessageSampler(
                         sourceIndex = aligned.rawMessage.sourceIndex,
                     )
                 }
+                .toList()
 
-        val totalAvailable = mine.size
-        val byCount =
-            if (totalAvailable <= maxSamples) mine else evenlySpaced(mine, maxSamples)
-        val byBudget = trimToCharBudget(byCount, maxCharBudget)
-
+        val totalAvailable = candidates.size
+        if (totalAvailable == 0) {
+            return ProfilingInput(myMessages = emptyList(), totalSampled = 0, totalAvailable = 0)
+        }
+        val picked = bucketedLengthPreferred(candidates, maxSamples, maxCharBudget)
+        // Restore chronological order (sourceIndex monotonic with time).
+        val ordered = picked.sortedBy { it.sourceIndex }
         return ProfilingInput(
-            myMessages = byBudget,
-            totalSampled = byBudget.size,
+            myMessages = ordered,
+            totalSampled = ordered.size,
             totalAvailable = totalAvailable,
         )
     }
 
     /**
-     * Picks [n] items from [list] at evenly-spaced indices. For n == 1 the
-     * middle element is returned; for n >= list.size every element is returned.
+     * Splits [candidates] into [TIME_BUCKETS] equal-width buckets by their
+     * position in the input list (proxy for time when sourceIndex is
+     * monotonic), sorts each bucket by content length DESC, then round-robins
+     * across buckets — taking the longest unused message from each bucket per
+     * round — until either [sizeCap] messages or [charBudget] characters are
+     * collected.
      */
-    internal fun <T> evenlySpaced(
-        list: List<T>,
-        n: Int,
-    ): List<T> {
-        if (n >= list.size) return list
-        val step = list.size.toDouble() / n
-        return (0 until n).map { i -> list[(i * step).toInt().coerceAtMost(list.size - 1)] }
-    }
-
-    /**
-     * Binary-searches the largest N for which `evenlySpaced(items, N)` fits
-     * within [budget] total characters. Returns at least one element so
-     * downstream code never sees an empty profile (PersonaProfiler will then
-     * flag InsufficientProfile by its own threshold).
-     */
-    internal fun trimToCharBudget(
-        items: List<SampledMessage>,
-        budget: Int,
+    @Suppress("LoopWithTooManyJumpStatements")
+    internal fun bucketedLengthPreferred(
+        candidates: List<SampledMessage>,
+        sizeCap: Int,
+        charBudget: Int,
     ): List<SampledMessage> {
-        if (items.isEmpty()) return items
-        if (items.sumOf { it.content.length } <= budget) return items
-        var lo = 1
-        var hi = items.size
-        while (lo < hi) {
-            val mid = (lo + hi + 1) / 2
-            val candidate = evenlySpaced(items, mid)
-            if (candidate.sumOf { it.content.length } <= budget) lo = mid else hi = mid - 1
+        val n = candidates.size
+        val numBuckets = minOf(TIME_BUCKETS, n)
+        val bucketSize = n.toDouble() / numBuckets
+        val buckets =
+            (0 until numBuckets).map { i ->
+                val start = (i * bucketSize).toInt()
+                val end = ((i + 1) * bucketSize).toInt().coerceAtMost(n)
+                candidates.subList(start, end).sortedByDescending { it.content.length }
+            }
+        val cursors = IntArray(numBuckets)
+        val out = ArrayList<SampledMessage>(minOf(sizeCap, n))
+        var charsUsed = 0
+        var stillHaveAny = true
+        while (out.size < sizeCap && stillHaveAny) {
+            stillHaveAny = false
+            for (b in 0 until numBuckets) {
+                if (cursors[b] >= buckets[b].size) continue
+                val candidate = buckets[b][cursors[b]]
+                val candLen = candidate.content.length
+                // If even the smallest remaining message in any bucket would
+                // overflow the budget, stop. (Conservative — doesn't try
+                // skipping; just stops to keep the algorithm predictable.)
+                if (charsUsed + candLen > charBudget) {
+                    cursors[b] = buckets[b].size // mark this bucket exhausted
+                    continue
+                }
+                out += candidate
+                charsUsed += candLen
+                cursors[b]++
+                stillHaveAny = true
+                if (out.size >= sizeCap) return out
+            }
         }
-        return evenlySpaced(items, lo)
+        return out
     }
 
     companion object {
         const val DEFAULT_MAX_SAMPLES: Int = 2000
         const val DEFAULT_MAX_CHAR_BUDGET: Int = 8_000
         const val DEFAULT_MAX_SINGLE_LENGTH: Int = 400
+        const val TIME_BUCKETS: Int = 10
     }
 }
