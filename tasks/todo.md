@@ -100,7 +100,13 @@
         adopt/discard/modify 写库（in-memory FeedbackBuffer 保留为本会话快照）
   - [x] fingerprintVersion 取自最新 StyleFingerprintEntity（不再 PLACEHOLDER）
   - [x] CandidateCard 丢弃增加 AlertDialog 二次确认
-- [ ] **T21** 增量学习写回 StyleFingerprint [M] — deps: T14, T20
+- [~] **T21** 增量学习写回 StyleFingerprint [M] — deps: T14, T20
+  - [x] IncrementalLearner（feature-realtime/feedback）：取最新画像 + 累积反馈 → LLM 合并 → 新版本入库
+  - [x] FeedbackProvider 索引接口；隔离 Room 依赖，便于单测
+  - [x] 类型层红线：buildPrompt 入参 List<FeedbackSignal>，没有任何 Theirs 字段；
+        测试断言 prompt 不出现 "对方"/"theirs"
+  - [x] 4 项单测：InsufficientProfile / 版本递增 / 隐私红线 / LLM 错误不写库
+  - [ ] 用户回滚到上一版本的 UI 入口（数据层已支持，UI 留作后续）
 
 **Checkpoint M4**：反馈环闭合、人工评审
 
