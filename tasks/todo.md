@@ -136,10 +136,12 @@
 - [x] **T26 / P8** P1 悬浮窗 spec [S] — deps: 无
   - [x] `docs/ideas/p1-floating-window.md` 已落，三阶演进路径 + 抽象对接 + 不做红线
   - [ ] 用户审批 → 启动 P1.a 详细 plan（独立任务，不在 T26 内）
-- [ ] **T27 / P9** 画像导出 / 导入 JSON（解决重装丢失） [S] — deps: T25
-  - SAF 导出/导入 JSON；不加密、零联网、不含原始聊天
-  - 导入 = 写新版本，旧版本保留可回滚
-  - 单测：export→import 往返一致；schema 缺失/损坏的错误提示
+- [x] **T27 / P9** 画像导出 / 导入 JSON（解决重装丢失） [S] — deps: T25
+  - [x] ProfileExport (core-data) 纯逻辑：exportLatest / importJson + ImportResult sealed
+  - [x] FingerprintJson 加 toJsonForExport（encodeDefaults=true, prettyPrint=true）
+  - [x] SettingsScreen 加"画像备份"区 + 状态展示
+  - [x] MainActivity 接 SAF CreateDocument / OpenDocument，onboarding 期也接（spec 验收 #6）
+  - [x] 单测 7 项：往返一致 + 版本递增忽略文件 version + 空/损坏/非画像错误
 - [ ] **T28 / P10** 演化画像（旧画像 + 新对话） [M] — deps: T27
   - PersonaProfiler.profile(priorFingerprint = ...) 扩展，向后兼容
   - Onboarding 在已有画像时显示"重新画像 / 演化画像"分支
