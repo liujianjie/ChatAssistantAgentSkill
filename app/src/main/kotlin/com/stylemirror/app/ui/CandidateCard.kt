@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,6 +42,24 @@ fun CandidateCard(
 ) {
     var editing by remember { mutableStateOf(false) }
     var editText by remember(item.id) { mutableStateOf(item.candidate.text) }
+    var confirmingDiscard by remember(item.id) { mutableStateOf(false) }
+
+    if (confirmingDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmingDiscard = false },
+            title = { Text("丢弃这条候选？") },
+            text = { Text("丢弃后会作为反馈记录到画像调优。可以撤销吗？不可。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmingDiscard = false
+                    onDiscard(item)
+                }) { Text("确认丢弃") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmingDiscard = false }) { Text("取消") }
+            },
+        )
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -92,7 +111,7 @@ fun CandidateCard(
                     OutlinedButton(onClick = { editing = true }, modifier = Modifier.weight(1f)) {
                         Text("修改")
                     }
-                    OutlinedButton(onClick = { onDiscard(item) }, modifier = Modifier.weight(1f)) {
+                    OutlinedButton(onClick = { confirmingDiscard = true }, modifier = Modifier.weight(1f)) {
                         Text("丢弃")
                     }
                 }

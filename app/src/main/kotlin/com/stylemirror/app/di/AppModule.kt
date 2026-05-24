@@ -3,6 +3,7 @@ package com.stylemirror.app.di
 import android.content.Context
 import com.stylemirror.core.data.db.DatabasePassphraseProvider
 import com.stylemirror.core.data.db.StyleMirrorDatabase
+import com.stylemirror.core.data.repository.FeedbackRepository
 import com.stylemirror.core.data.repository.StyleFingerprintRepository
 import com.stylemirror.core.data.repository.StyleFingerprintStore
 import com.stylemirror.core.data.security.SharedPrefsSecureKeyStore
@@ -55,6 +56,11 @@ object AppModule {
     @Singleton
     fun provideStyleFingerprintStore(db: StyleMirrorDatabase): StyleFingerprintStore =
         StyleFingerprintRepository(dao = db.styleFingerprintDao())
+
+    @Provides
+    @Singleton
+    fun provideFeedbackRepository(db: StyleMirrorDatabase): FeedbackRepository =
+        FeedbackRepository(dao = db.feedbackSignalDao())
 
     @Provides
     @Singleton

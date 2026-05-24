@@ -7,6 +7,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.stylemirror.app.feedback.FeedbackBuffer
+import com.stylemirror.core.data.repository.FeedbackRepository
+import com.stylemirror.core.data.repository.StyleFingerprintStore
 import com.stylemirror.domain.candidate.Candidate
 import com.stylemirror.domain.conversation.ConversationContext
 import com.stylemirror.domain.conversation.PartnerId
@@ -59,12 +61,15 @@ sealed class ScreenshotState {
 }
 
 @HiltViewModel
+@Suppress("LongParameterList")
 class MainViewModel
     @Inject
     constructor(
         private val candidateGenerator: CandidateGenerator,
         private val keyStore: SecureKeyStore,
         private val feedbackBuffer: FeedbackBuffer,
+        private val feedbackRepository: FeedbackRepository,
+        private val fingerprintStore: StyleFingerprintStore,
         private val screenshotInput: ScreenshotInput,
         @ApplicationContext private val appContext: Context,
     ) : ViewModel() {
@@ -116,24 +121,24 @@ class MainViewModel
         }
 
         fun adopt(item: CandidateItem) {
-            feedbackBuffer.record(
+            recordSignal { version ->
                 FeedbackSignal.Adopt(
                     candidateId = item.id,
-                    fingerprintVersion = PLACEHOLDER_FP_VERSION,
+                    fingerprintVersion = version,
                     createdAt = Instant.now(),
-                ),
-            )
+                )
+            }
         }
 
         fun discard(item: CandidateItem) {
-            feedbackBuffer.record(
+            recordSignal { version ->
                 FeedbackSignal.Discard(
                     candidateId = item.id,
-                    fingerprintVersion = PLACEHOLDER_FP_VERSION,
+                    fingerprintVersion = version,
                     createdAt = Instant.now(),
                     reason = DiscardReason.OFF_STYLE,
-                ),
-            )
+                )
+            }
         }
 
         fun modify(
@@ -141,14 +146,30 @@ class MainViewModel
             editedText: String,
         ) {
             if (editedText.isBlank()) return
-            feedbackBuffer.record(
+            recordSignal { version ->
                 FeedbackSignal.Modify(
                     candidateId = item.id,
-                    fingerprintVersion = PLACEHOLDER_FP_VERSION,
+                    fingerprintVersion = version,
                     createdAt = Instant.now(),
                     editedContent = editedText,
-                ),
-            )
+                )
+            }
+        }
+
+        private fun recordSignal(build: (version: Int) -> FeedbackSignal) {
+            viewModelScope.launch {
+                val version =
+                    fingerprintStore.findLatest()?.version ?: PLACEHOLDER_FP_VERSION
+                val signal = build(version)
+                // Keep in-memory buffer for current-session UX (immediate stats);
+                // persist to encrypted Room so feedback survives restarts and
+                // T21 incremental learner can replay it.
+                feedbackBuffer.record(signal)
+                feedbackRepository.record(
+                    id = "fb-${Instant.now().toEpochMilli()}-${signal.candidateId.value}",
+                    signal = signal,
+                )
+            }
         }
 
         fun captureScreenshot(uri: Uri) {

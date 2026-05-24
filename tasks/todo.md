@@ -95,7 +95,11 @@
 
 ## Phase 5 — M4 反馈环
 
-- [ ] **T20** 反馈信号持久化 + UI 完善 [S] — deps: T08, T09
+- [x] **T20** 反馈信号持久化 + UI 完善 [S] — deps: T08, T09
+  - [x] MainViewModel 注入 FeedbackRepository + StyleFingerprintStore；
+        adopt/discard/modify 写库（in-memory FeedbackBuffer 保留为本会话快照）
+  - [x] fingerprintVersion 取自最新 StyleFingerprintEntity（不再 PLACEHOLDER）
+  - [x] CandidateCard 丢弃增加 AlertDialog 二次确认
 - [ ] **T21** 增量学习写回 StyleFingerprint [M] — deps: T14, T20
 
 **Checkpoint M4**：反馈环闭合、人工评审
