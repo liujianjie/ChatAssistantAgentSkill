@@ -9,10 +9,13 @@ import com.stylemirror.core.data.security.SharedPrefsSecureKeyStore
 import com.stylemirror.domain.security.SecureKeyStore
 import com.stylemirror.feature.imports.profiling.PersonaProfiler
 import com.stylemirror.feature.realtime.candidate.CandidateGenerator
+import com.stylemirror.feature.realtime.input.ScreenshotInput
 import com.stylemirror.feature.realtime.matching.RoomBackedStyleEngine
 import com.stylemirror.feature.realtime.matching.StyleEngine
 import com.stylemirror.infra.llm.LLMProvider
 import com.stylemirror.infra.llm.deepseek.DeepSeekProvider
+import com.stylemirror.infra.ocr.OcrProvider
+import com.stylemirror.infra.ocr.mlkit.MlKitOcrProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -71,4 +74,12 @@ object AppModule {
         llmProvider: LLMProvider,
         styleEngine: StyleEngine,
     ): CandidateGenerator = CandidateGenerator(llmProvider = llmProvider, styleEngine = styleEngine)
+
+    @Provides
+    @Singleton
+    fun provideOcrProvider(): OcrProvider = MlKitOcrProvider.create()
+
+    @Provides
+    @Singleton
+    fun provideScreenshotInput(ocrProvider: OcrProvider): ScreenshotInput = ScreenshotInput(ocrProvider = ocrProvider)
 }

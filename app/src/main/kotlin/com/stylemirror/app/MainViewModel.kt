@@ -1,5 +1,9 @@
 package com.stylemirror.app
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.stylemirror.app.feedback.FeedbackBuffer
@@ -7,6 +11,7 @@ import com.stylemirror.domain.candidate.Candidate
 import com.stylemirror.domain.conversation.ConversationContext
 import com.stylemirror.domain.conversation.PartnerId
 import com.stylemirror.domain.error.DomainError
+import com.stylemirror.domain.error.OcrFailureReason
 import com.stylemirror.domain.error.Outcome
 import com.stylemirror.domain.feedback.CandidateId
 import com.stylemirror.domain.feedback.DiscardReason
@@ -15,7 +20,10 @@ import com.stylemirror.domain.security.SecureKeyStore
 import com.stylemirror.feature.realtime.candidate.CandidateGenerator
 import com.stylemirror.feature.realtime.input.PasteEvent
 import com.stylemirror.feature.realtime.input.PasteInput
+import com.stylemirror.feature.realtime.input.ScreenshotInput
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +31,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import javax.inject.Inject
 
@@ -41,6 +50,14 @@ sealed class GenerateState {
     data class Error(val message: String) : GenerateState()
 }
 
+sealed class ScreenshotState {
+    data object Idle : ScreenshotState()
+
+    data object Working : ScreenshotState()
+
+    data class Error(val message: String) : ScreenshotState()
+}
+
 @HiltViewModel
 class MainViewModel
     @Inject
@@ -48,6 +65,8 @@ class MainViewModel
         private val candidateGenerator: CandidateGenerator,
         private val keyStore: SecureKeyStore,
         private val feedbackBuffer: FeedbackBuffer,
+        private val screenshotInput: ScreenshotInput,
+        @ApplicationContext private val appContext: Context,
     ) : ViewModel() {
         private val _pasteText = MutableStateFlow("")
         val pasteText: StateFlow<String> = _pasteText.asStateFlow()
@@ -57,6 +76,9 @@ class MainViewModel
 
         private val _apiKeyHint = MutableStateFlow("")
         val apiKeyHint: StateFlow<String> = _apiKeyHint.asStateFlow()
+
+        private val _screenshotState = MutableStateFlow<ScreenshotState>(ScreenshotState.Idle)
+        val screenshotState: StateFlow<ScreenshotState> = _screenshotState.asStateFlow()
 
         init {
             viewModelScope.launch { refreshApiKeyHint() }
@@ -129,6 +151,44 @@ class MainViewModel
             )
         }
 
+        fun captureScreenshot(uri: Uri) {
+            _screenshotState.value = ScreenshotState.Working
+            viewModelScope.launch {
+                val bitmap = decodeBitmapFromUri(uri)
+                if (bitmap == null) {
+                    _screenshotState.value =
+                        ScreenshotState.Error("无法读取图片，请重新选择")
+                    return@launch
+                }
+                when (val result = screenshotInput.captureFrom(bitmap)) {
+                    is Outcome.Ok -> {
+                        // Append OCR'd text to existing paste content rather than overwrite —
+                        // user may want to mix multiple screenshots before generating.
+                        _pasteText.update { current ->
+                            if (current.isBlank()) result.value else "$current\n${result.value}"
+                        }
+                        _screenshotState.value = ScreenshotState.Idle
+                    }
+
+                    is Outcome.Err ->
+                        _screenshotState.value = ScreenshotState.Error(ocrErrorMessage(result.error))
+                }
+            }
+        }
+
+        fun dismissScreenshotError() {
+            _screenshotState.value = ScreenshotState.Idle
+        }
+
+        private suspend fun decodeBitmapFromUri(uri: Uri): Bitmap? =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    appContext.contentResolver.openInputStream(uri)?.use { stream ->
+                        BitmapFactory.decodeStream(stream)
+                    }
+                }.getOrNull()
+            }
+
         fun saveApiKey(key: String) {
             if (key.isBlank()) return
             viewModelScope.launch {
@@ -173,6 +233,17 @@ class MainViewModel
                         }
                     is DomainError.ImportFailure -> "输入内容无效，请检查粘贴的文本"
                     else -> "发生未知错误"
+                }
+
+            private fun ocrErrorMessage(error: DomainError): String =
+                when (error) {
+                    is DomainError.OcrFailure ->
+                        when (error.reason) {
+                            OcrFailureReason.NO_TEXT_DETECTED -> "未识别到文字，请尝试更清晰的截图"
+                            OcrFailureReason.IMAGE_UNREADABLE -> "图片无法读取，请检查文件格式"
+                            OcrFailureReason.PROVIDER_ERROR -> "识别服务异常，请稍后重试"
+                        }
+                    else -> "截图导入失败"
                 }
         }
     }

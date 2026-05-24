@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":core-domain"))
     implementation(project(":core-data"))
     implementation(project(":infra-llm"))
+    implementation(project(":infra-ocr"))
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(project(":core-domain"))

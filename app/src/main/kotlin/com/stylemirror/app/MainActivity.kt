@@ -81,12 +81,21 @@ class MainActivity : ComponentActivity() {
         val pasteText by viewModel.pasteText.collectAsStateWithLifecycle()
         val generateState by viewModel.generateState.collectAsStateWithLifecycle()
         val apiKeyHint by viewModel.apiKeyHint.collectAsStateWithLifecycle()
+        val screenshotState by viewModel.screenshotState.collectAsStateWithLifecycle()
+
+        val photoPicker =
+            androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),
+            ) { uri: android.net.Uri? ->
+                if (uri != null) viewModel.captureScreenshot(uri)
+            }
 
         when (screen) {
             AppScreen.MAIN ->
                 MainScreen(
                     pasteText = pasteText,
                     generateState = generateState,
+                    screenshotState = screenshotState,
                     onPasteChange = viewModel::onPasteTextChange,
                     onGenerate = viewModel::generate,
                     onAdopt = { item ->
@@ -98,6 +107,16 @@ class MainActivity : ComponentActivity() {
                         copyToClipboard(edited)
                     },
                     onDiscard = viewModel::discard,
+                    onPickScreenshot = {
+                        photoPicker.launch(
+                            androidx.activity.result.PickVisualMediaRequest(
+                                mediaType =
+                                    androidx.activity.result.contract.ActivityResultContracts
+                                        .PickVisualMedia.ImageOnly,
+                            ),
+                        )
+                    },
+                    onDismissScreenshotError = viewModel::dismissScreenshotError,
                     onOpenSettings = { screen = AppScreen.SETTINGS },
                     onReprofile = onReprofile,
                 )

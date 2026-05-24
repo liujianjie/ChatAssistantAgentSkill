@@ -73,7 +73,11 @@
   - [x] PaddleOcrProvider / CloudOcrProvider 留 NotImplemented
   - [x] ADR-0004 OCR Provider 策略
   - [x] :infra-ocr:test 全绿；真机 5 张 Soul 测试图待 T17/T18 验证
-- [ ] **T17** ScreenshotInput 实装 [S] — deps: T08, T16
+- [x] **T17** ScreenshotInput 实装 [S] — deps: T08, T16
+  - [x] ScreenshotInput 改为 OCR 文本提取器（OcrProvider + formatOcrText 排序）
+  - [x] MainViewModel.captureScreenshot(uri)：相册 URI → Bitmap → OCR → 追加到 paste
+  - [x] PickVisualMedia photo picker + "导入截图" 按钮 + 错误状态 ScreenshotState
+  - [x] :feature-realtime:test ScreenshotInputTest 5 项；:app:assembleDebug 通过
 - [ ] **T18** Soul PlatformAdapter [M] — deps: T16, T17
 - [ ] **T19** 批量截图 ImportSource [S] — deps: T10, T16, T18
 

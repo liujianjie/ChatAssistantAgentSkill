@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.stylemirror.app.CandidateItem
 import com.stylemirror.app.GenerateState
+import com.stylemirror.app.ScreenshotState
 
 /**
  * Main screen: paste conversation, generate candidates, and handle feedback.
@@ -34,11 +35,14 @@ import com.stylemirror.app.GenerateState
 fun MainScreen(
     pasteText: String,
     generateState: GenerateState,
+    screenshotState: ScreenshotState,
     onPasteChange: (String) -> Unit,
     onGenerate: () -> Unit,
     onAdopt: (CandidateItem) -> Unit,
     onModify: (CandidateItem, String) -> Unit,
     onDiscard: (CandidateItem) -> Unit,
+    onPickScreenshot: () -> Unit,
+    onDismissScreenshotError: () -> Unit,
     onOpenSettings: () -> Unit,
     onReprofile: () -> Unit,
     modifier: Modifier = Modifier,
@@ -69,12 +73,43 @@ fun MainScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        Button(
-            onClick = onGenerate,
-            enabled = pasteText.isNotBlank() && generateState !is GenerateState.Generating,
+        androidx.compose.foundation.layout.Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("生成候选回复")
+            androidx.compose.material3.OutlinedButton(
+                onClick = onPickScreenshot,
+                enabled = screenshotState !is ScreenshotState.Working,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    if (screenshotState is ScreenshotState.Working) "识别中…" else "导入截图",
+                )
+            }
+            Button(
+                onClick = onGenerate,
+                enabled = pasteText.isNotBlank() && generateState !is GenerateState.Generating,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("生成候选回复")
+            }
+        }
+
+        if (screenshotState is ScreenshotState.Error) {
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = screenshotState.message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onDismissScreenshotError) { Text("关闭") }
+            }
         }
 
         Spacer(Modifier.height(16.dp))

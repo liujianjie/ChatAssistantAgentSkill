@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":core-data"))
     implementation(project(":infra-net"))
     implementation(project(":infra-llm"))
+    implementation(project(":infra-ocr"))
     implementation(project(":feature-realtime"))
     implementation(project(":feature-import"))
 
