@@ -145,7 +145,6 @@ class PlainTextImportSourceTest : StringSpec({
             listOf(
                 WeChatPcExportImportSource(),
                 WeChatBackupImportSource(),
-                BatchScreenshotImportSource(),
                 ThirdPartyToolImportSource(),
             )
         stubs.forEach { stub ->

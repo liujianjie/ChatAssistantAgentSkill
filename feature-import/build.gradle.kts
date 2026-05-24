@@ -17,6 +17,8 @@ dependencies {
     implementation(project(":core-domain"))
     implementation(project(":core-data"))
     implementation(project(":infra-llm"))
+    implementation(project(":infra-ocr"))
+    implementation(project(":feature-realtime"))
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.snakeyaml)
 

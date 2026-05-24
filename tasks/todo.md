@@ -84,7 +84,12 @@
   - [x] 居中/straddle 文本继承上一说话人；首条无前置默认 THEIRS（保守偏置）
   - [x] 8 项单测：左右两侧、居中继承、首条默认、5 条对话交替、3200px 高分辨、容差校验
   - [x] :platform-soul:test 全绿；色彩采样留作后续可选项
-- [ ] **T19** 批量截图 ImportSource [S] — deps: T10, T16, T18
+- [x] **T19** 批量截图 ImportSource [S] — deps: T10, T16, T18
+  - [x] BatchScreenshotImportSource：List<ScreenshotPayload> → OCR → SoulPlatformAdapter → 流式 RawMessage
+  - [x] onProgress(current, total) 回调；失败截图非致命（onError 上报后继续）
+  - [x] coroutineScope.ensureActive()，取消可促停 OCR
+  - [x] 纯映射函数 toRawMessages 暴露给单测；4 项测试覆盖标签/baseSourceIndex/trim/空集
+  - [x] 移除旧 BatchScreenshotImportSource stub；同步 PlainTextImportSourceTest 列表
 
 **Checkpoint M3**：Soul 截图错位率 < 5%、端到端通、人工评审
 

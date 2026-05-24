@@ -16,14 +16,6 @@ class WeChatBackupImportSource : ImportSource {
     override fun stream(): Flow<RawMessage> = flow { notImplemented() }
 }
 
-/**
- * Batch OCR screenshot import — depends on T16 (OcrProvider).
- * Implemented in T19; stub throws [DomainError.NotImplemented] until then.
- */
-class BatchScreenshotImportSource : ImportSource {
-    override fun stream(): Flow<RawMessage> = flow { notImplemented() }
-}
-
 /** Generic third-party tool export (CSV/JSON) — not yet implemented. */
 class ThirdPartyToolImportSource : ImportSource {
     override fun stream(): Flow<RawMessage> = flow { notImplemented() }
