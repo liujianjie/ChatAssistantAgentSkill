@@ -113,7 +113,10 @@
 
 ## Phase 6 — M5 自用验证
 
-- [ ] **T22** 性能基线（MacroBenchmark） [S] — deps: T15, T19
+- [~] **T22** 性能基线（MacroBenchmark） [S] — deps: T15, T19
+  - [x] JVM 微基准 ImportPipelineBenchmarkTest（cleaner→aligner→sampler）：10k=75ms / 1k=6ms，护栏阈值挂在断言里
+  - [x] docs/perf/baseline.md：分层量测策略 + 微基准结果 + MacroBenchmark 完整模板（待真机粘贴运行）
+  - [ ] MacroBenchmark 三项指标实测（候选 P95 / 冷启动 / OCR 批量）— 阻塞：需 connected Android 设备
 - [ ] **T23** 自用 1 周观察 + 日报 [S, 跨度 1 周] — deps: T22
 - [ ] **T24** 调优收口（不开新功能） [S–M] — deps: T23
 
