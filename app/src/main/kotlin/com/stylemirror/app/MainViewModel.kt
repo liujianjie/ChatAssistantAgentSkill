@@ -81,6 +81,7 @@ class MainViewModel
         private val feedbackBuffer: FeedbackBuffer,
         private val feedbackRepository: FeedbackRepository,
         private val fingerprintStore: StyleFingerprintStore,
+        private val corpusSampleStore: com.stylemirror.core.data.repository.CorpusSampleStore,
         private val screenshotInput: ScreenshotInput,
         @ApplicationContext private val appContext: Context,
     ) : ViewModel() {
@@ -225,7 +226,10 @@ class MainViewModel
             viewModelScope.launch {
                 runCatching {
                     val json =
-                        com.stylemirror.core.data.profiling.ProfileExport.exportLatest(fingerprintStore)
+                        com.stylemirror.core.data.profiling.ProfileExport.exportLatest(
+                            store = fingerprintStore,
+                            corpusStore = corpusSampleStore,
+                        )
                     if (json == null) {
                         _profileIoState.value = ProfileIoState.Error("尚未建立画像，请先完成 onboarding")
                         return@launch
@@ -257,6 +261,7 @@ class MainViewModel
                     val r =
                         com.stylemirror.core.data.profiling.ProfileExport.importJson(
                             store = fingerprintStore,
+                            corpusStore = corpusSampleStore,
                             json = json,
                         )
                 ) {
