@@ -39,12 +39,14 @@ fun OnboardingScreen(
     state: OnboardingState,
     aliases: String,
     pasteText: String,
+    apiKeyHint: String,
     onAliasesChange: (String) -> Unit,
     onPasteChange: (String) -> Unit,
     onConfirmAliases: () -> Unit,
     onBackToAliases: () -> Unit,
     onRunProfiling: () -> Unit,
     onPickTextFile: () -> Unit,
+    onOpenSettings: () -> Unit,
     onRetry: () -> Unit,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
@@ -56,13 +58,30 @@ fun OnboardingScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
     ) {
-        Text("欢迎使用风格镜像", style = MaterialTheme.typography.headlineSmall)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("欢迎使用风格镜像", style = MaterialTheme.typography.headlineSmall)
+            TextButton(onClick = onOpenSettings) {
+                Text(if (apiKeyHint.isBlank()) "设置 API Key" else "设置")
+            }
+        }
         Spacer(Modifier.height(4.dp))
         Text(
             "我们将基于你历史聊天中的发言，提取你的说话风格。\n仅用于本机生成候选回复，不会上传到云端用于训练。",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (apiKeyHint.isBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "⚠️ 还未设置 DeepSeek API Key —— 生成画像前请先点右上角填入。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Spacer(Modifier.height(16.dp))
 
         when (state) {

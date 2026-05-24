@@ -62,6 +62,22 @@ class MainActivity : ComponentActivity() {
 
     @androidx.compose.runtime.Composable
     private fun OnboardingFlow() {
+        var showSettings by rememberSaveable { mutableStateOf(false) }
+        val apiKeyHint by viewModel.apiKeyHint.collectAsStateWithLifecycle()
+
+        if (showSettings) {
+            SettingsScreen(
+                apiKeyHint = apiKeyHint,
+                onSave = { key ->
+                    viewModel.saveApiKey(key)
+                    showSettings = false
+                },
+                onClear = viewModel::clearApiKey,
+                onBack = { showSettings = false },
+            )
+            return
+        }
+
         val state by onboardingViewModel.state.collectAsStateWithLifecycle()
         val aliases by onboardingViewModel.aliases.collectAsStateWithLifecycle()
         val pasteText by onboardingViewModel.pasteText.collectAsStateWithLifecycle()
@@ -95,6 +111,7 @@ class MainActivity : ComponentActivity() {
             state = state,
             aliases = aliases,
             pasteText = pasteText,
+            apiKeyHint = apiKeyHint,
             onAliasesChange = onboardingViewModel::onAliasesChange,
             onPasteChange = onboardingViewModel::onPasteChange,
             onConfirmAliases = onboardingViewModel::confirmAliases,
@@ -111,6 +128,7 @@ class MainActivity : ComponentActivity() {
                     ),
                 )
             },
+            onOpenSettings = { showSettings = true },
             onRetry = onboardingViewModel::resetToAskAliases,
             onFinish = routeViewModel::onProfileCreated,
         )
