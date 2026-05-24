@@ -31,6 +31,14 @@ import java.net.SocketTimeoutException
  * - empty `choices` → INVALID_RESPONSE (provider answered, but unusable)
  * - missing API key → KEY_MISSING (no HTTP call attempted)
  *
+ * **DeepSeek `n` quirk**: DeepSeek's chat-completions API only supports `n=1`
+ * (passing `n>1` returns HTTP 400). This provider therefore always sends
+ * `n=1` on the wire and, when the caller asks for multiple candidates, splits
+ * the single response by newline (the prompt template instructs the model to
+ * emit one candidate per line). If the upstream returns ≥ N choices we still
+ * honor them — keeps the path open for OpenAI-compatible providers that do
+ * support `n>1`.
+ *
  * Exceptions never escape the provider — every failure exits via
  * [Outcome.Err], so callers can `when` exhaustively.
  *
@@ -62,7 +70,9 @@ class DeepSeekProvider internal constructor(
                 model = model,
                 messages = listOf(DeepSeekMessage(role = "user", content = prompt)),
                 maxTokens = maxTokens,
-                n = n,
+                // DeepSeek only supports n=1; multi-candidate is achieved by splitting
+                // the single response on newlines in mapResponse below.
+                n = 1,
             )
 
         return try {
@@ -71,7 +81,7 @@ class DeepSeekProvider internal constructor(
                     authorization = "Bearer $apiKey",
                     request = request,
                 )
-            mapResponse(response)
+            mapResponse(response, expectedCount = n)
         } catch (e: HttpException) {
             Outcome.Err(httpExceptionToDomain(e))
         } catch (e: SocketTimeoutException) {
@@ -81,23 +91,52 @@ class DeepSeekProvider internal constructor(
         }
     }
 
-    private fun mapResponse(response: DeepSeekChatResponse): Outcome<List<Candidate>, DomainError> {
+    @Suppress("ReturnCount")
+    private fun mapResponse(
+        response: DeepSeekChatResponse,
+        expectedCount: Int,
+    ): Outcome<List<Candidate>, DomainError> {
         if (response.choices.isEmpty()) {
             return Outcome.Err(DomainError.LlmFailure(reason = LlmFailureReason.INVALID_RESPONSE))
         }
+        // Path A: server gave us enough choices natively (OpenAI-compatible n>1).
+        if (response.choices.size >= expectedCount) {
+            val perCandidateTokens =
+                response.usage?.let { usage ->
+                    usage.completionTokens / response.choices.size.coerceAtLeast(1)
+                }
+            return Outcome.Ok(
+                response.choices.take(expectedCount).map { choice ->
+                    Candidate(text = choice.message.content.trim(), tokens = perCandidateTokens)
+                },
+            )
+        }
+        // Path B: single response (DeepSeek default) — split by newline. Prompt
+        // template instructs the model to emit one candidate per line.
+        val pieces = splitIntoCandidates(response.choices[0].message.content)
+        if (pieces.isEmpty()) {
+            return Outcome.Err(DomainError.LlmFailure(reason = LlmFailureReason.INVALID_RESPONSE))
+        }
+        val taken = pieces.take(expectedCount)
         val perCandidateTokens =
             response.usage?.let { usage ->
-                usage.completionTokens / response.choices.size.coerceAtLeast(1)
+                usage.completionTokens / taken.size.coerceAtLeast(1)
             }
-        val candidates =
-            response.choices.map { choice ->
-                Candidate(
-                    text = choice.message.content.trim(),
-                    tokens = perCandidateTokens,
-                )
-            }
-        return Outcome.Ok(candidates)
+        return Outcome.Ok(taken.map { Candidate(text = it, tokens = perCandidateTokens) })
     }
+
+    /**
+     * Splits a single LLM completion into candidate strings.
+     * Drops blank lines and strips common numbering prefixes ("1. ", "2) ", "1、")
+     * since the prompt asks for un-numbered output but models occasionally add it.
+     */
+    internal fun splitIntoCandidates(text: String): List<String> =
+        text.lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { LEADING_NUMBER.replace(it, "") }
+            .filter { it.isNotEmpty() }
+            .toList()
 
     private fun httpExceptionToDomain(e: HttpException): DomainError.LlmFailure {
         val reason =
@@ -119,6 +158,7 @@ class DeepSeekProvider internal constructor(
         private const val HTTP_FORBIDDEN = 403
         private const val HTTP_TOO_MANY_REQUESTS = 429
         private val HTTP_INTERNAL_ERROR_RANGE = 500..599
+        private val LEADING_NUMBER = Regex("^\\d+[.、)]\\s*")
 
         /**
          * Production factory. Builds a Retrofit-backed [DeepSeekApi] over the

@@ -250,11 +250,33 @@ class MainViewModel
                             com.stylemirror.domain.error.LlmFailureReason.RATE_LIMITED -> "请求过于频繁，请稍后再试"
                             com.stylemirror.domain.error.LlmFailureReason.AUTH -> "API Key 无效，请在设置中更新"
                             com.stylemirror.domain.error.LlmFailureReason.SERVER_ERROR -> "服务器错误，请稍后再试"
-                            com.stylemirror.domain.error.LlmFailureReason.INVALID_RESPONSE -> "模型返回无效响应"
+                            com.stylemirror.domain.error.LlmFailureReason.INVALID_RESPONSE ->
+                                "模型返回无效响应${invalidResponseDetail(error.cause)}"
                         }
                     is DomainError.ImportFailure -> "输入内容无效，请检查粘贴的文本"
                     else -> "发生未知错误"
                 }
+
+            /**
+             * Renders a short hint after "模型返回无效响应" so users (and we) can
+             * tell apart the three INVALID_RESPONSE paths: HTTP 4xx, empty
+             * choices, or local JSON parse error.
+             *
+             * Detection by class-name string keeps this module decoupled from
+             * retrofit2 (it ships only as a transitive `implementation` dep
+             * through infra-llm and is not visible at compile time here).
+             */
+            private fun invalidResponseDetail(cause: Throwable?): String {
+                if (cause == null) return ""
+                val clsName = cause::class.simpleName.orEmpty()
+                if (clsName == "HttpException") {
+                    // retrofit2.HttpException.message() is "HTTP 400 Bad Request"
+                    val msg = cause.message.orEmpty()
+                    val code = Regex("HTTP\\s+(\\d{3})").find(msg)?.groupValues?.getOrNull(1)
+                    return if (code != null) "（HTTP $code）" else "（HTTP 错误）"
+                }
+                return "（$clsName）"
+            }
 
             private fun ocrErrorMessage(error: DomainError): String =
                 when (error) {

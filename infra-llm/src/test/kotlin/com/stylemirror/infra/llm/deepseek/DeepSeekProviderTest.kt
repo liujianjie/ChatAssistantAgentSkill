@@ -6,6 +6,7 @@ import com.stylemirror.domain.error.Outcome
 import com.stylemirror.infra.llm.testing.InMemorySecureKeyStore
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
@@ -81,6 +82,111 @@ class DeepSeekProviderTest {
             recorded.path shouldBe "/chat/completions"
             recorded.getHeader("Authorization") shouldBe "Bearer sk-test"
             recorded.body.readUtf8().shouldContain("\"model\":\"deepseek-chat\"")
+            // DeepSeek only supports n=1 — provider must always send 1 regardless of caller's n.
+            recorded.body.readUtf8().shouldContain("\"n\":1")
+        }
+
+    @Test
+    fun `single choice with multiple lines is split into N candidates`() =
+        runTest {
+            // DeepSeek's actual behavior: returns a single choice; prompt asks for N lines.
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody(
+                        """
+                        {
+                          "id": "abc",
+                          "choices": [
+                            {"index": 0, "message": {"role": "assistant", "content": "在的，怎么了\n刚到家\n稍等我看下"}, "finish_reason": "stop"}
+                          ],
+                          "usage": {"prompt_tokens": 20, "completion_tokens": 30, "total_tokens": 50}
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+            val provider = newProvider()
+
+            val outcome = provider.generateCandidates(prompt = "x", n = 3)
+
+            val candidates = (outcome as Outcome.Ok).value
+            candidates shouldHaveSize 3
+            candidates[0].text shouldBe "在的，怎么了"
+            candidates[1].text shouldBe "刚到家"
+            candidates[2].text shouldBe "稍等我看下"
+            candidates[0].tokens shouldBe 10 // 30 / 3
+        }
+
+    @Test
+    fun `numbered prefixes are stripped when splitting`() =
+        runTest {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody(
+                        """
+                        {
+                          "id": "x",
+                          "choices": [
+                            {"index": 0, "message": {"role": "assistant", "content": "1. 在的\n2、好的\n3) 嗯嗯"}, "finish_reason": "stop"}
+                          ]
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+            val provider = newProvider()
+
+            val outcome = provider.generateCandidates(prompt = "x", n = 3)
+
+            val candidates = (outcome as Outcome.Ok).value
+            candidates shouldHaveSize 3
+            candidates[0].text shouldBe "在的"
+            candidates[1].text shouldBe "好的"
+            candidates[2].text shouldBe "嗯嗯"
+        }
+
+    @Test
+    fun `single line response yields one candidate without erroring`() =
+        runTest {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody(
+                        """
+                        {
+                          "id": "x",
+                          "choices": [
+                            {"index": 0, "message": {"role": "assistant", "content": "好的"}, "finish_reason": "stop"}
+                          ]
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+            val provider = newProvider()
+
+            val outcome = provider.generateCandidates(prompt = "x", n = 3)
+
+            val candidates = (outcome as Outcome.Ok).value
+            candidates shouldHaveSize 1
+            candidates[0].text shouldBe "好的"
+        }
+
+    @Test
+    fun `400 maps to INVALID_RESPONSE with cause set so caller can show HTTP code`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error":"bad request"}"""))
+            val provider = newProvider()
+
+            val outcome = provider.generateCandidates(prompt = "x")
+
+            val err = (outcome as Outcome.Err).error.shouldBeInstanceOf<DomainError.LlmFailure>()
+            err.reason shouldBe LlmFailureReason.INVALID_RESPONSE
+            err.cause shouldNotBe null
+            // retrofit2.HttpException.message() = "HTTP 400 Bad Request"
+            err.cause!!.message.orEmpty().shouldContain("400")
         }
 
     @Test
