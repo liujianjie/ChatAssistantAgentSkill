@@ -117,10 +117,35 @@
   - [x] JVM 微基准 ImportPipelineBenchmarkTest（cleaner→aligner→sampler）：10k=75ms / 1k=6ms，护栏阈值挂在断言里
   - [x] docs/perf/baseline.md：分层量测策略 + 微基准结果 + MacroBenchmark 完整模板（待真机粘贴运行）
   - [ ] MacroBenchmark 三项指标实测（候选 P95 / 冷启动 / OCR 批量）— 阻塞：需 connected Android 设备
-- [ ] **T23** 自用 1 周观察 + 日报 [S, 跨度 1 周] — deps: T22
-- [ ] **T24** 调优收口（不开新功能） [S–M] — deps: T23
+- [~] **T23** 自用 1 周观察 + 日报 [S, 跨度 1 周] — deps: T22 — **跳过（用户决策直接进 M6）**
+- [~] **T24** 调优收口（不开新功能） [S–M] — deps: T23 — **跳过（用户决策直接进 M6）**
 
 **Checkpoint M5（MVP 交付）**：成功判据全达标、红线零违反、人工决策是否进 P1
+
+---
+
+## Phase 7 — M6 修补 + P1 序章（自用反馈触发）
+
+> 触发：自用阶段暴露真问题；用户决策跳过 T23/T24 直接进 M6。
+> 详见 plan.md Phase 7 + `docs/ideas/profile-lifecycle.md` + `docs/ideas/p1-floating-window.md`。
+
+- [ ] **T25 / P7** 修 INVALID_RESPONSE 根因 — DeepSeek n=1 + 错误透传 [S] — deps: 无
+  - 根因怀疑：`DeepSeekChatRequest.n=3` 触发 DeepSeek API 400（仅支持 n=1）
+  - 修：n 固定 1 + mapResponse 按行拆分 + 错误文案附 HTTP code
+  - 单测：MockWebServer 覆盖 400 / 多行单响应 / cause 透传
+- [x] **T26 / P8** P1 悬浮窗 spec [S] — deps: 无
+  - [x] `docs/ideas/p1-floating-window.md` 已落，三阶演进路径 + 抽象对接 + 不做红线
+  - [ ] 用户审批 → 启动 P1.a 详细 plan（独立任务，不在 T26 内）
+- [ ] **T27 / P9** 画像导出 / 导入 JSON（解决重装丢失） [S] — deps: T25
+  - SAF 导出/导入 JSON；不加密、零联网、不含原始聊天
+  - 导入 = 写新版本，旧版本保留可回滚
+  - 单测：export→import 往返一致；schema 缺失/损坏的错误提示
+- [ ] **T28 / P10** 演化画像（旧画像 + 新对话） [M] — deps: T27
+  - PersonaProfiler.profile(priorFingerprint = ...) 扩展，向后兼容
+  - Onboarding 在已有画像时显示"重新画像 / 演化画像"分支
+  - prompt 包含旧画像中文结构化总结，明确"按近期对话权重漂移"
+
+**Checkpoint M6**：T25 端到端冒烟、T27 重装回归、T28 演化对比验证、T26 spec 审通过、人工决策是否进 P1.a
 
 ---
 
@@ -143,3 +168,4 @@
 | W6 | M4 | T20–T21 |
 | W7 | M5 | T22 + 自用观察启动 |
 | W8 | M5 | T23–T24 收口 |
+| (自用反馈触发) | M6 | T25–T28（P7-P10）— bug 修 + 画像可移植/可演化 + P1 spec |

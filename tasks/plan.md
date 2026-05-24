@@ -59,6 +59,7 @@ build-logic (gradle convention plugins)
 | 4 | M3 OCR + Soul | T16–T19 | 截图导入 + Soul 实时识别 |
 | 5 | M4 反馈环闭合 | T20–T21 | 反馈信号增量更新画像 |
 | 6 | M5 自用验证 | T22–T24 | 性能基线 + 自用 1 周观察期 |
+| 7 | M6 修补 + P1 序章 | T25–T28（P7-P10）| Bug 修 + 画像可移植/可演化 + P1 悬浮窗 spec |
 
 ---
 
@@ -435,6 +436,79 @@ build-logic (gradle convention plugins)
 - [ ] 红线零违反（grep + 单测）
 - [ ] 自用日报 7 天全部写完
 - [ ] **人工决策**：是否进入 P1（悬浮窗 / 微信适配 / 复盘报告）
+
+---
+
+### Phase 7 — M6 修补 + P1 序章（自用反馈触发）
+
+> 自用阶段暴露的真问题：① 候选生成 INVALID_RESPONSE bug ② 重装画像即丢 ③ 画像只能"全重做"或"反馈微调"，缺中间形态 ④ 手动粘贴体验拉胯。
+> T23/T24 跳过（用户决定），直接进 M6。
+
+#### T25（P7）：修 INVALID_RESPONSE 根因 — DeepSeek n=1 + 错误透传
+**Description**：根因高度疑似为 `DeepSeekChatRequest.n=3` 触发 DeepSeek API 400（DeepSeek 当前仅支持 n=1）。修复：① `DeepSeekDtos.kt` 把 n 固定为 1；② `DeepSeekProvider.mapResponse` 把单条 message.content 按行拆成 N 个候选（prompt 已要求"输出 3 条，每条单独一行"，逻辑天然吻合）；③ `MainViewModel` 的 INVALID_RESPONSE 文案附加 cause/HTTP code 短摘要，避免下次黑盒。
+**Acceptance criteria**：
+- [ ] DeepSeekProvider 发送 n=1
+- [ ] mapResponse 在 prompt 期望多候选时按行拆分（去编号、去前后空白），数量不足补足或返回 INVALID_RESPONSE
+- [ ] 错误文案包含 HTTP code（"模型返回无效响应（400）"），而非纯黑盒
+- [ ] 单测：MockWebServer 覆盖 400 / 单条多行响应 / cause 透传
+**Verification**：
+- [ ] `./gradlew :infra-llm:test :app:test`
+- [ ] 真机用真实 DeepSeek Key 跑端到端，候选 3 条
+**Dependencies**：无
+**Files**：`infra-llm/.../DeepSeekDtos.kt`、`infra-llm/.../DeepSeekProvider.kt`、`infra-llm/.../DeepSeekProviderTest.kt`、`app/.../MainViewModel.kt`
+**Scope**：S
+
+#### T26（P8）：P1 悬浮窗 spec（不写代码）
+**Description**：起草 `docs/ideas/p1-floating-window.md`，覆盖三阶演进路径（P1.a 系统分享 sheet → P1.b 截屏触发 OCR → P1.c Accessibility 实时悬浮窗），与已有 InputAdapter/PlatformAdapter 抽象的对接，隐私红线复用，分阶段验收。spec 完成后由用户审，再排详细 plan。
+**Acceptance criteria**：
+- [x] spec 文档落 `docs/ideas/p1-floating-window.md`
+- [x] 三阶都有"做什么 / 优点 / 缺点 / 收益评估"
+- [x] 与现有 5 大抽象的对接表（InputAdapter / PlatformAdapter / OcrProvider / 候选生成）
+- [x] 至少 3 条"不做"红线（避免范围膨胀）
+- [ ] 用户审批通过 → 启动 P1.a 详细 plan（独立 plan 任务）
+**Verification**：人工评审 spec
+**Dependencies**：无（与 T25 并行）
+**Files**：`docs/ideas/p1-floating-window.md`
+**Scope**：S
+
+#### T27（P9）：画像导出 / 导入 JSON（解决重装丢失）
+**Description**：见 `docs/ideas/profile-lifecycle.md` § P9。设置页加两按钮，SAF 导出当前最新画像为不加密 JSON / SAF 导入并写新版本（不覆盖历史）。零隐私让步：JSON 仅含 6 维结构化数据。
+**Acceptance criteria**：
+- [ ] 设置页"导出画像 / 导入画像"按钮可达
+- [ ] 导出文件命名 `style-mirror-profile-{yyyyMMdd-HHmmss}.json`
+- [ ] 导出 JSON 与 Room DB 最新版本逐字段一致
+- [ ] 导入空文件 / 损坏 JSON / 字段全缺失三种情况有明确错误提示
+- [ ] 导入成功后 HistoryScreen 出现新版本（用 `nextVersion()`），旧版本保留可回滚
+- [ ] 单测：往返一致性（export → import → fingerprint 等价）
+**Verification**：
+- [ ] `./gradlew :app:test :core-data:test`
+- [ ] 真机：卸载 App → 重装 → 导入之前导出的 JSON → 主页能直接生成候选
+**Dependencies**：T25（修 bug 后才有完整端到端验证）
+**Files**：`app/.../settings/**`、`core-data/.../profiling/FingerprintJson.kt`（如需补 schema 校验）、`app/src/test/...`
+**Scope**：S
+
+#### T28（P10）：演化画像（基于旧画像 + 新对话）
+**Description**：见 `docs/ideas/profile-lifecycle.md` § P10。扩 `PersonaProfiler.profile()` 接受 `priorFingerprint: StyleFingerprint?`；onboarding 在已有画像时显示"重新画像 / 演化画像"两个选项；prompt 模板把旧画像以中文结构化总结附给 LLM，明确"不要简单平均，按近期对话权重更高漂移"。结果同样写新版本，可回滚。
+**Acceptance criteria**：
+- [ ] `PersonaProfiler.profile(priorFingerprint = ...)` 接口扩展，向后兼容（priorFingerprint=null 时行为完全等价于 T15）
+- [ ] OnboardingViewModel 在已有画像时进入"演化 vs 重新"分支
+- [ ] 演化 prompt 包含旧画像 6 维中文结构化总结（不直接塞 JSON）
+- [ ] 类型层红线：profile 入参签名只接受 StyleFingerprint + ProfilingInput
+- [ ] 单测：构造 priorFingerprint(formality=FORMAL) + 新对话明显 CASUAL → 验证 prompt 内容/输出向 CASUAL 偏移（用 FakeLLMProvider）
+- [ ] 单测：priorFingerprint=null 时与现状 T15 等价
+**Verification**：
+- [ ] `./gradlew :feature-import:test :app:test`
+- [ ] 手动：导入两段风格差异明显的对话，对比演化画像 vs 重新画像的差异
+**Dependencies**：T27（先解决持久化再考虑演化更稳）
+**Files**：`feature-import/.../PersonaProfiler.kt`、`app/.../onboarding/**`
+**Scope**：M
+
+#### Checkpoint：M6 完成
+- [ ] T25 端到端冒烟通过（候选生成不再 INVALID_RESPONSE）
+- [ ] T27 重装回归测试：卸载 → 重装 → 导入 JSON → 不需要重新做 onboarding
+- [ ] T28 演化画像至少有 1 次自用验证（自用观察对画像偏移是否合理）
+- [ ] T26 spec 已审通过，P1.a 进入下一轮 plan
+- [ ] **人工决策**：进入 P1.a 详细 plan，还是继续打磨 M6 成果
 
 ---
 
