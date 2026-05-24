@@ -20,19 +20,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.stylemirror.app.history.HistoryViewModel
 import com.stylemirror.app.onboarding.OnboardingViewModel
+import com.stylemirror.app.ui.HistoryScreen
 import com.stylemirror.app.ui.MainScreen
 import com.stylemirror.app.ui.OnboardingScreen
 import com.stylemirror.app.ui.SettingsScreen
 import dagger.hilt.android.AndroidEntryPoint
 
-private enum class AppScreen { MAIN, SETTINGS }
+private enum class AppScreen { MAIN, SETTINGS, HISTORY }
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private val routeViewModel: AppRouteViewModel by viewModels()
     private val onboardingViewModel: OnboardingViewModel by viewModels()
+    private val historyViewModel: HistoryViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -118,6 +121,7 @@ class MainActivity : ComponentActivity() {
                     },
                     onDismissScreenshotError = viewModel::dismissScreenshotError,
                     onOpenSettings = { screen = AppScreen.SETTINGS },
+                    onOpenHistory = { screen = AppScreen.HISTORY },
                     onReprofile = onReprofile,
                 )
 
@@ -131,6 +135,18 @@ class MainActivity : ComponentActivity() {
                     onClear = viewModel::clearApiKey,
                     onBack = { screen = AppScreen.MAIN },
                 )
+
+            AppScreen.HISTORY -> {
+                val historyItems by historyViewModel.items.collectAsStateWithLifecycle()
+                val rollbackState by historyViewModel.rollback.collectAsStateWithLifecycle()
+                HistoryScreen(
+                    items = historyItems,
+                    rollback = rollbackState,
+                    onRollback = historyViewModel::rollbackTo,
+                    onDismissRollback = historyViewModel::acknowledgeRollback,
+                    onBack = { screen = AppScreen.MAIN },
+                )
+            }
         }
     }
 

@@ -44,6 +44,7 @@ fun MainScreen(
     onPickScreenshot: () -> Unit,
     onDismissScreenshotError: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenHistory: () -> Unit,
     onReprofile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -56,6 +57,7 @@ fun MainScreen(
             Text("风格镜像", style = MaterialTheme.typography.titleMedium)
             androidx.compose.foundation.layout.Row {
                 TextButton(onClick = onReprofile) { Text("重新画像") }
+                TextButton(onClick = onOpenHistory) { Text("历史") }
                 TextButton(onClick = onOpenSettings) { Text("设置") }
             }
         }
