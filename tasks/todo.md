@@ -41,9 +41,9 @@
 - [~] **T06** InputAdapter 抽象 + PasteInput [S] — deps: T02, T03
   - [x] InputAdapter contract + PasteInput 解析（覆盖单行/多行/alias/continuation/cross-device）
   - [x] Overlay/Screenshot/ShareSheet stub（仅 contract surface，等 T08/T17 接平台胶水）
-  - [ ] T06 收口：jacoco ≥ 80% PasteInput + 真机粘贴源接入 T08
-- [ ] **T07** 候选生成器 + Fake StyleEngine + 隐私护栏 [M] — deps: T05, T06
-- [ ] **T08** app Compose UI 最短闭环 + 反馈占位 [M] — deps: T05, T06, T07
+  - [x] T06 收口：jacoco ≥ 80% PasteInput（已达 92.7%）; 真机粘贴源接入 T08 ✓
+- [x] **T07** 候选生成器 + Fake StyleEngine + 隐私护栏 [M] — deps: T05, T06
+- [x] **T08** app Compose UI 最短闭环 + 反馈占位 [M] — deps: T05, T06, T07
 
 **Checkpoint M1**：端到端冒烟、P95 ≤ 3s、隐私护栏单测、人工评审
 

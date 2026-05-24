@@ -3,6 +3,7 @@
 
 plugins {
     id("stylemirror.android.library")
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -12,6 +13,10 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -24,6 +29,12 @@ dependencies {
     // SecureKeyStore implementation — backed by AndroidX EncryptedSharedPrefs.
     implementation(libs.androidx.security.crypto)
 
+    // Room (KTX flow support + SQLCipher encryption)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+    implementation(libs.sqlcipher)
+
     // --- Unit test stack (Robolectric so we can exercise the real Android
     //     SharedPreferences + Tink keystore on a desktop JVM). RobolectricTestRunner
     //     is a JUnit4 runner, so we deliberately stay on JUnit4 here and only
@@ -33,4 +44,5 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.test.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.room.testing)
 }
