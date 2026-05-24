@@ -66,7 +66,13 @@
 
 ## Phase 4 — M3 OCR + Soul
 
-- [ ] **T16** OcrProvider 抽象 + ML Kit 实现 [M] — deps: T02
+- [x] **T16** OcrProvider 抽象 + ML Kit 实现 [M] — deps: T02
+  - [x] OcrProvider 接口 + OcrResult/TextBox/BoundingBox 数据模型
+  - [x] FakeOcrProvider（responder 模式，CI 用）
+  - [x] MlKitOcrProvider（中文 ML Kit on-device）
+  - [x] PaddleOcrProvider / CloudOcrProvider 留 NotImplemented
+  - [x] ADR-0004 OCR Provider 策略
+  - [x] :infra-ocr:test 全绿；真机 5 张 Soul 测试图待 T17/T18 验证
 - [ ] **T17** ScreenshotInput 实装 [S] — deps: T08, T16
 - [ ] **T18** Soul PlatformAdapter [M] — deps: T16, T17
 - [ ] **T19** 批量截图 ImportSource [S] — deps: T10, T16, T18
