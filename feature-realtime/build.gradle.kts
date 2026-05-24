@@ -21,6 +21,7 @@ android {
 
 dependencies {
     implementation(project(":core-domain"))
+    implementation(project(":infra-llm"))
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(project(":core-domain"))

@@ -21,9 +21,14 @@ package com.stylemirror.domain.candidate
  * @property tokens Optional token count reported by the provider. Used by
  *   the feedback loop to track per-candidate cost; null when the provider
  *   doesn't expose usage.
+ * @property styleMatchScore How well this candidate aligns with the user's
+ *   style fingerprint, on the `[0.0, 1.0]` range. Set by the candidate
+ *   generator (T07 / T14); null when no fingerprint was available (e.g. fresh
+ *   install before onboarding).
  */
 data class Candidate(
     val text: String,
     val rationale: String? = null,
     val tokens: Int? = null,
+    val styleMatchScore: Float? = null,
 )
