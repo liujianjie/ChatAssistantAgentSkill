@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stylemirror.app.history.HistoryViewModel
 import com.stylemirror.app.onboarding.OnboardingViewModel
+import com.stylemirror.app.onboarding.TextSource
 import com.stylemirror.app.ui.HistoryScreen
 import com.stylemirror.app.ui.MainScreen
 import com.stylemirror.app.ui.OnboardingScreen
@@ -64,6 +65,31 @@ class MainActivity : ComponentActivity() {
         val state by onboardingViewModel.state.collectAsStateWithLifecycle()
         val aliases by onboardingViewModel.aliases.collectAsStateWithLifecycle()
         val pasteText by onboardingViewModel.pasteText.collectAsStateWithLifecycle()
+
+        val txtPicker =
+            androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+            ) { uri: android.net.Uri? ->
+                if (uri != null) {
+                    val source =
+                        TextSource {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                contentResolver.openInputStream(uri)?.use { stream ->
+                                    val bytes = stream.readBytes()
+                                    if (bytes.size > OnboardingViewModel.MAX_FILE_BYTES) {
+                                        error(
+                                            "文件过大（${bytes.size / 1024 / 1024} MB），请控制在 " +
+                                                "${OnboardingViewModel.MAX_FILE_BYTES / 1024 / 1024} MB 以内",
+                                        )
+                                    }
+                                    bytes.toString(Charsets.UTF_8)
+                                } ?: error("无法读取文件，请重新选择")
+                            }
+                        }
+                    onboardingViewModel.loadFromTextSource(source)
+                }
+            }
+
         OnboardingScreen(
             state = state,
             aliases = aliases,
@@ -73,6 +99,7 @@ class MainActivity : ComponentActivity() {
             onConfirmAliases = onboardingViewModel::confirmAliases,
             onBackToAliases = onboardingViewModel::backToAliases,
             onRunProfiling = onboardingViewModel::runProfiling,
+            onPickTextFile = { txtPicker.launch(arrayOf("text/plain", "text/*")) },
             onRetry = onboardingViewModel::resetToAskAliases,
             onFinish = routeViewModel::onProfileCreated,
         )

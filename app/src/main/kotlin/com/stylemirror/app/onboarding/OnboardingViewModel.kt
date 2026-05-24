@@ -20,6 +20,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
+ * Suspendable text-source closure passed to [OnboardingViewModel.loadFromTextSource].
+ *
+ * Production wiring builds the closure inline in MainActivity around a SAF Uri
+ * + ContentResolver. Tests pass a literal string. The ViewModel never sees
+ * Android Uri or Context.
+ */
+fun interface TextSource {
+    suspend fun read(): String
+}
+
+/**
  * Drives the onboarding pipeline:
  *   PlainTextImportSource → MessageCleaner → SpeakerAligner →
  *   MessageSampler → PersonaProfiler → StyleFingerprintRepository.
@@ -127,7 +138,29 @@ class OnboardingViewModel
             _state.value = OnboardingState.AskAliases
         }
 
+        /**
+         * Reads text from a caller-supplied [TextSource] (production wraps a SAF
+         * Uri + ContentResolver) and loads it into the paste field. Errors
+         * thrown by the source surface as [OnboardingState.Error].
+         */
+        fun loadFromTextSource(source: TextSource) {
+            viewModelScope.launch {
+                runCatching { source.read() }
+                    .onSuccess { text ->
+                        _pasteText.value = text
+                        if (_state.value is OnboardingState.Error) {
+                            _state.value = OnboardingState.AskCorpus
+                        }
+                    }
+                    .onFailure { e ->
+                        _state.value = OnboardingState.Error("文件导入失败：${e.message ?: "未知错误"}")
+                    }
+            }
+        }
+
         companion object {
+            const val MAX_FILE_BYTES: Int = 5 * 1024 * 1024 // 5 MB
+
             internal fun parseAliases(raw: String): Set<String> =
                 raw
                     .split(',', '，', '\n', ' ', '、', ';', '；')

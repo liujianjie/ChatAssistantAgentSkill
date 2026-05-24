@@ -60,6 +60,9 @@ private fun corpusOf(messageCount: Int): String =
         }
     }
 
+private fun newViewModel(profiler: PersonaProfiler): OnboardingViewModel =
+    OnboardingViewModel(personaProfiler = profiler)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest : StringSpec({
 
@@ -97,7 +100,7 @@ class OnboardingViewModelTest : StringSpec({
         runTest(testDispatcher) {
             val store = StubStore()
             val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
-            val vm = OnboardingViewModel(personaProfiler = PersonaProfiler(llm, store))
+            val vm = newViewModel(PersonaProfiler(llm, store))
 
             vm.onAliasesChange("我")
             vm.onPasteChange(corpusOf(15))
@@ -116,7 +119,7 @@ class OnboardingViewModelTest : StringSpec({
         runTest(testDispatcher) {
             val store = StubStore()
             val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
-            val vm = OnboardingViewModel(personaProfiler = PersonaProfiler(llm, store))
+            val vm = newViewModel(PersonaProfiler(llm, store))
 
             vm.onAliasesChange("我")
             vm.onPasteChange(corpusOf(3)) // only 3 Me messages, below MIN_SAMPLES_REQUIRED=10
@@ -137,7 +140,7 @@ class OnboardingViewModelTest : StringSpec({
                 FakeLLMProvider { _, _ ->
                     Outcome.Err(DomainError.LlmFailure(LlmFailureReason.AUTH))
                 }
-            val vm = OnboardingViewModel(personaProfiler = PersonaProfiler(llm, store))
+            val vm = newViewModel(PersonaProfiler(llm, store))
 
             vm.onAliasesChange("我")
             vm.onPasteChange(corpusOf(15))
@@ -153,15 +156,41 @@ class OnboardingViewModelTest : StringSpec({
 
     "confirmAliases ignores empty alias input and stays on AskAliases" {
         val vm =
-            OnboardingViewModel(
-                personaProfiler =
-                    PersonaProfiler(
-                        FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) },
-                        StubStore(),
-                    ),
+            newViewModel(
+                PersonaProfiler(
+                    FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) },
+                    StubStore(),
+                ),
             )
         vm.onAliasesChange("   ")
         vm.confirmAliases()
         vm.state.value shouldBe OnboardingState.AskAliases
+    }
+
+    "loadFromTextSource 把 source 返回的文本写入 pasteText" {
+        runTest(testDispatcher) {
+            val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
+            val vm = newViewModel(PersonaProfiler(llm, StubStore()))
+
+            vm.loadFromTextSource(TextSource { "我：从文件来\n张三：你好" })
+            testScheduler.advanceUntilIdle()
+
+            vm.pasteText.value shouldContain "从文件来"
+        }
+    }
+
+    "loadFromTextSource source 抛错时进入 Error 态，包含原因" {
+        runTest(testDispatcher) {
+            val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
+            val vm = newViewModel(PersonaProfiler(llm, StubStore()))
+
+            vm.loadFromTextSource(TextSource { error("文件过大（10 MB）") })
+            testScheduler.advanceUntilIdle()
+
+            val state = vm.state.value
+            state.shouldBeInstanceOf<OnboardingState.Error>()
+            state.message shouldContain "文件导入失败"
+            state.message shouldContain "文件过大"
+        }
     }
 })

@@ -44,6 +44,7 @@ fun OnboardingScreen(
     onConfirmAliases: () -> Unit,
     onBackToAliases: () -> Unit,
     onRunProfiling: () -> Unit,
+    onPickTextFile: () -> Unit,
     onRetry: () -> Unit,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
@@ -77,6 +78,7 @@ fun OnboardingScreen(
                     pasteText = pasteText,
                     onPasteChange = onPasteChange,
                     onBack = onBackToAliases,
+                    onPickTextFile = onPickTextFile,
                     onNext = onRunProfiling,
                 )
 
@@ -129,6 +131,7 @@ private fun AskCorpusStep(
     pasteText: String,
     onPasteChange: (String) -> Unit,
     onBack: () -> Unit,
+    onPickTextFile: () -> Unit,
     onNext: () -> Unit,
 ) {
     Text("第 2 步 / 共 2 步：粘贴聊天记录", style = MaterialTheme.typography.titleMedium)
@@ -140,6 +143,13 @@ private fun AskCorpusStep(
             "建议至少粘贴 30 条以上你自己的发言，画像才会准确。",
         style = MaterialTheme.typography.bodySmall,
     )
+    Spacer(Modifier.height(8.dp))
+    androidx.compose.material3.OutlinedButton(
+        onClick = onPickTextFile,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text("从文件导入（.txt）")
+    }
     Spacer(Modifier.height(8.dp))
     OutlinedTextField(
         value = pasteText,
