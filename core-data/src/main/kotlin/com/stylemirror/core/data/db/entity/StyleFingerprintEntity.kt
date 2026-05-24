@@ -31,4 +31,12 @@ data class StyleFingerprintEntity(
     /** JSON-encoded StyleFingerprint dimensions. */
     @ColumnInfo(name = "fingerprint_json")
     val fingerprintJson: String,
+    /**
+     * Free-text persona description (200–500 字 markdown) produced by
+     * [PersonaProfiler] in v2. Empty string for v1 rows that predate
+     * Migration 2; UI/CandidateGenerator handle empty as "fall back to v1".
+     * See ADR-0005.
+     */
+    @ColumnInfo(name = "behavior_rules", defaultValue = "")
+    val behaviorRules: String = "",
 )

@@ -4,10 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.stylemirror.core.data.db.dao.CorpusSampleDao
 import com.stylemirror.core.data.db.dao.FeedbackSignalDao
 import com.stylemirror.core.data.db.dao.ImportSessionDao
 import com.stylemirror.core.data.db.dao.MessageDao
 import com.stylemirror.core.data.db.dao.StyleFingerprintDao
+import com.stylemirror.core.data.db.entity.CorpusSampleEntity
 import com.stylemirror.core.data.db.entity.FeedbackSignalEntity
 import com.stylemirror.core.data.db.entity.ImportSessionEntity
 import com.stylemirror.core.data.db.entity.MessageEntity
@@ -33,8 +35,9 @@ import net.sqlcipher.database.SupportFactory
         StyleFingerprintEntity::class,
         FeedbackSignalEntity::class,
         ImportSessionEntity::class,
+        CorpusSampleEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class StyleMirrorDatabase : RoomDatabase() {
@@ -45,6 +48,8 @@ abstract class StyleMirrorDatabase : RoomDatabase() {
     abstract fun feedbackSignalDao(): FeedbackSignalDao
 
     abstract fun importSessionDao(): ImportSessionDao
+
+    abstract fun corpusSampleDao(): CorpusSampleDao
 
     companion object {
         const val DB_NAME: String = "style_mirror.db"

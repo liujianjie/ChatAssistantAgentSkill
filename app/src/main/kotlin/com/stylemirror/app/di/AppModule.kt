@@ -3,6 +3,8 @@ package com.stylemirror.app.di
 import android.content.Context
 import com.stylemirror.core.data.db.DatabasePassphraseProvider
 import com.stylemirror.core.data.db.StyleMirrorDatabase
+import com.stylemirror.core.data.repository.CorpusSampleRepository
+import com.stylemirror.core.data.repository.CorpusSampleStore
 import com.stylemirror.core.data.repository.FeedbackRepository
 import com.stylemirror.core.data.repository.StyleFingerprintRepository
 import com.stylemirror.core.data.repository.StyleFingerprintStore
@@ -27,6 +29,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+@Suppress("TooManyFunctions")
 object AppModule {
     @Provides
     @Singleton
@@ -61,6 +64,11 @@ object AppModule {
     @Singleton
     fun provideFeedbackRepository(db: StyleMirrorDatabase): FeedbackRepository =
         FeedbackRepository(dao = db.feedbackSignalDao())
+
+    @Provides
+    @Singleton
+    fun provideCorpusSampleStore(db: StyleMirrorDatabase): CorpusSampleStore =
+        CorpusSampleRepository(dao = db.corpusSampleDao())
 
     @Provides
     @Singleton

@@ -21,6 +21,45 @@ object StyleMirrorMigrations {
             }
         }
 
+    /**
+     * v2 (画像 v2 / ADR-0005) — adds:
+     *  - `style_fingerprints.behavior_rules TEXT NOT NULL DEFAULT ''`
+     *  - new table `style_corpus_samples`
+     *
+     * No data backfill: v1 rows get an empty `behavior_rules` and no corpus
+     * samples; UI / CandidateGenerator detect this and fall back to v1 prompt
+     * shape until the user re-profiles or evolves.
+     */
+    val MIGRATION_1_2: Migration =
+        object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE style_fingerprints ADD COLUMN behavior_rules TEXT NOT NULL DEFAULT ''",
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS style_corpus_samples (
+                        rowid INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        fingerprint_version INTEGER NOT NULL,
+                        partner_scope_id TEXT,
+                        text TEXT NOT NULL,
+                        scenario TEXT NOT NULL,
+                        created_at_epoch_ms INTEGER NOT NULL,
+                        deleted_at_epoch_ms INTEGER
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_style_corpus_samples_fingerprint_version " +
+                        "ON style_corpus_samples(fingerprint_version)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_style_corpus_samples_scenario " +
+                        "ON style_corpus_samples(scenario)",
+                )
+            }
+        }
+
     /** Full DDL for schema version 1. Used by MigrationTestHelper. */
     val CREATE_V1_SQL: List<String> =
         listOf(
@@ -70,5 +109,5 @@ object StyleMirrorMigrations {
             """.trimIndent(),
         )
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_1)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_1, MIGRATION_1_2)
 }
