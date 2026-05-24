@@ -78,7 +78,12 @@
   - [x] MainViewModel.captureScreenshot(uri)：相册 URI → Bitmap → OCR → 追加到 paste
   - [x] PickVisualMedia photo picker + "导入截图" 按钮 + 错误状态 ScreenshotState
   - [x] :feature-realtime:test ScreenshotInputTest 5 项；:app:assembleDebug 通过
-- [ ] **T18** Soul PlatformAdapter [M] — deps: T16, T17
+- [x] **T18** Soul PlatformAdapter [M] — deps: T16, T17
+  - [x] PlatformAdapter 接口（feature-realtime/platform）+ Speaker/ClassifiedTextBox 数据类
+  - [x] SoulPlatformAdapter：右边距 vs 屏幕中线（默认 5% 容差，分辨率无关）
+  - [x] 居中/straddle 文本继承上一说话人；首条无前置默认 THEIRS（保守偏置）
+  - [x] 8 项单测：左右两侧、居中继承、首条默认、5 条对话交替、3200px 高分辨、容差校验
+  - [x] :platform-soul:test 全绿；色彩采样留作后续可选项
 - [ ] **T19** 批量截图 ImportSource [S] — deps: T10, T16, T18
 
 **Checkpoint M3**：Soul 截图错位率 < 5%、端到端通、人工评审
