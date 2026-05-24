@@ -148,7 +148,7 @@ private fun AskCorpusStep(
         onClick = onPickTextFile,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("从文件导入（.txt）")
+        Text("从文件导入（.txt / .md / .html / .docx / .pdf）")
     }
     Spacer(Modifier.height(8.dp))
     OutlinedTextField(

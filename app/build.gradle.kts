@@ -45,6 +45,11 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
+    // Document text extraction for onboarding import (.html, .pdf).
+    // .docx is parsed inline via a small ZIP+XML extractor — no extra dep.
+    implementation(libs.jsoup)
+    implementation(libs.pdfbox.android)
+
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
 

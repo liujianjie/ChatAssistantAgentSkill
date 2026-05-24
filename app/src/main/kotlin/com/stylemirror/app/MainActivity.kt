@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
                 contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
             ) { uri: android.net.Uri? ->
                 if (uri != null) {
+                    val mimeType = contentResolver.getType(uri)
                     val source =
                         TextSource {
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -82,7 +83,7 @@ class MainActivity : ComponentActivity() {
                                                 "${OnboardingViewModel.MAX_FILE_BYTES / 1024 / 1024} MB 以内",
                                         )
                                     }
-                                    bytes.toString(Charsets.UTF_8)
+                                    com.stylemirror.app.onboarding.TextExtractors.extract(bytes, mimeType)
                                 } ?: error("无法读取文件，请重新选择")
                             }
                         }
@@ -99,7 +100,17 @@ class MainActivity : ComponentActivity() {
             onConfirmAliases = onboardingViewModel::confirmAliases,
             onBackToAliases = onboardingViewModel::backToAliases,
             onRunProfiling = onboardingViewModel::runProfiling,
-            onPickTextFile = { txtPicker.launch(arrayOf("text/plain", "text/*")) },
+            onPickTextFile = {
+                txtPicker.launch(
+                    arrayOf(
+                        "text/plain",
+                        "text/markdown",
+                        "text/html",
+                        "application/pdf",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ),
+                )
+            },
             onRetry = onboardingViewModel::resetToAskAliases,
             onFinish = routeViewModel::onProfileCreated,
         )

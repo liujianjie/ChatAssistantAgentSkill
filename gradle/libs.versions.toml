@@ -34,6 +34,10 @@ kotlinx-coroutines = "1.9.0"
 # OCR
 mlkit-text-recognition = "16.0.1"
 
+# Document parsing (text extraction from .html / .pdf for onboarding import)
+jsoup = "1.18.1"
+pdfbox-android = "2.0.27.0"
+
 # Quality
 ktlint-plugin = "12.1.1"
 detekt = "1.23.7"
@@ -99,6 +103,10 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 # OCR
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkit-text-recognition" }
 mlkit-text-recognition-chinese = { group = "com.google.mlkit", name = "text-recognition-chinese", version.ref = "mlkit-text-recognition" }
+
+# Document parsing
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox-android" }
 
 # Test
 junit = { group = "junit", name = "junit", version.ref = "junit" }

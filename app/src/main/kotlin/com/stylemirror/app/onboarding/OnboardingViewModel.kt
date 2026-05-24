@@ -187,7 +187,7 @@ class OnboardingViewModel
         }
 
         companion object {
-            const val MAX_FILE_BYTES: Int = 5 * 1024 * 1024 // 5 MB
+            const val MAX_FILE_BYTES: Int = 50 * 1024 * 1024 // 50 MB
 
             internal fun parseAliases(raw: String): Set<String> =
                 raw
