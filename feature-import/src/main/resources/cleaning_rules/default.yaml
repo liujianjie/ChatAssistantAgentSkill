@@ -1,0 +1,28 @@
+merge_adjacent_same_speaker: true
+normalize_emoji_whitespace: true
+
+# Messages whose content matches any of these patterns are dropped entirely.
+# type: EXACT_CONTENT — content must contain the pattern string literally
+# type: REGEX         — content is matched against a Java regex
+filter_patterns:
+  # WeChat transfer / red packet system messages
+  - { pattern: "[转账]",   type: EXACT_CONTENT }
+  - { pattern: "[收款]",   type: EXACT_CONTENT }
+  - { pattern: "[红包]",   type: EXACT_CONTENT }
+  - { pattern: "领取了你的红包",  type: EXACT_CONTENT }
+  - { pattern: "你领取了",        type: EXACT_CONTENT }
+
+  # System / recall notices
+  - { pattern: "撤回了一条消息",  type: EXACT_CONTENT }
+  - { pattern: "[系统消息]",       type: EXACT_CONTENT }
+  - { pattern: "[语音通话]",       type: EXACT_CONTENT }
+  - { pattern: "[视频通话]",       type: EXACT_CONTENT }
+  - { pattern: "[通话时长",        type: EXACT_CONTENT }
+
+  # Link / mini-program cards (typically "[链接]" or "[小程序]" wrappers)
+  - { pattern: "[链接]",   type: EXACT_CONTENT }
+  - { pattern: "[小程序]", type: EXACT_CONTENT }
+  - { pattern: "[分享]",   type: EXACT_CONTENT }
+
+  # Bare URL lines (standalone http/https link, no other text)
+  - { pattern: "^https?://\\S+$", type: REGEX }

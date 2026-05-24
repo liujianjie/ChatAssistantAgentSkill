@@ -16,6 +16,7 @@ android {
 dependencies {
     implementation(project(":core-domain"))
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.snakeyaml)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotest.runner.junit5)
