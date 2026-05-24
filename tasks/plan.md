@@ -487,21 +487,19 @@ build-logic (gradle convention plugins)
 **Files**：`app/.../settings/**`、`core-data/.../profiling/FingerprintJson.kt`（如需补 schema 校验）、`app/src/test/...`
 **Scope**：S
 
-#### T28（P10）：演化画像（基于旧画像 + 新对话）
-**Description**：见 `docs/ideas/profile-lifecycle.md` § P10。扩 `PersonaProfiler.profile()` 接受 `priorFingerprint: StyleFingerprint?`；onboarding 在已有画像时显示"重新画像 / 演化画像"两个选项；prompt 模板把旧画像以中文结构化总结附给 LLM，明确"不要简单平均，按近期对话权重更高漂移"。结果同样写新版本，可回滚。
-**Acceptance criteria**：
-- [ ] `PersonaProfiler.profile(priorFingerprint = ...)` 接口扩展，向后兼容（priorFingerprint=null 时行为完全等价于 T15）
-- [ ] OnboardingViewModel 在已有画像时进入"演化 vs 重新"分支
-- [ ] 演化 prompt 包含旧画像 6 维中文结构化总结（不直接塞 JSON）
-- [ ] 类型层红线：profile 入参签名只接受 StyleFingerprint + ProfilingInput
-- [ ] 单测：构造 priorFingerprint(formality=FORMAL) + 新对话明显 CASUAL → 验证 prompt 内容/输出向 CASUAL 偏移（用 FakeLLMProvider）
-- [ ] 单测：priorFingerprint=null 时与现状 T15 等价
-**Verification**：
-- [ ] `./gradlew :feature-import:test :app:test`
-- [ ] 手动：导入两段风格差异明显的对话，对比演化画像 vs 重新画像的差异
-**Dependencies**：T27（先解决持久化再考虑演化更稳）
-**Files**：`feature-import/.../PersonaProfiler.kt`、`app/.../onboarding/**`
-**Scope**：M
+#### T28（P10）：演化画像（基于旧画像 + 新对话）— **并入 T29 / P11**
+**Status**: 取消独立任务，并入 T29。
+**理由**：自用反馈触发画像 v2 重做（见 `docs/ideas/persona-v2.md` + ADR-0005）。v2 表示从 6 维 enum 升级为 6 维 + 行为规则文本 + 语料库三件套；演化语义在 v2 下天然原生（旧 B/C 喂 LLM 产新 B/C），独立做 P10 会被 P11 立刻覆写。
+
+#### T29（P11）：画像 v2 — Persona + 语料 + 检索式 few-shot
+**Description**：见 `docs/ideas/persona-v2.md` + ADR-0005。当前 6 维 enum 信息密度过低，候选 prompt 中画像段落仅约 70 字，LLM 生成质量显著低于参考项目（zhangxuefeng-skill / ex-skill-web）。重做画像表示：① 保留 6 维做 UI/隐私护栏 ② 新增行为规则文本 200-500 字 ③ 新增语料样本库 30-80 条按场景分类。候选生成接入检索式 few-shot。
+**Acceptance criteria**：见 spec 验收清单。
+**Verification**：spec 评审通过 → 排详细 sub-task → TDD 流程实施。
+**Dependencies**：T27（导出/导入需要兼容 v2 schema 含 behaviorRules + corpus 字段）
+**Files**：
+  - 实现期独立 plan 项落到 `tasks/plan.md` Phase 8 — 待 spec 评审通过后再写
+  - 涉及模块：core-data（schema/migration）、feature-import（PersonaProfiler）、feature-realtime（CandidateGenerator + Retriever）、app（UI）
+**Scope**：L（拆 sub-task 后每个 ≤ M）
 
 #### Checkpoint：M6 完成
 - [ ] T25 端到端冒烟通过（候选生成不再 INVALID_RESPONSE）

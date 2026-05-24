@@ -142,10 +142,20 @@
   - [x] SettingsScreen 加"画像备份"区 + 状态展示
   - [x] MainActivity 接 SAF CreateDocument / OpenDocument，onboarding 期也接（spec 验收 #6）
   - [x] 单测 7 项：往返一致 + 版本递增忽略文件 version + 空/损坏/非画像错误
-- [ ] **T28 / P10** 演化画像（旧画像 + 新对话） [M] — deps: T27
-  - PersonaProfiler.profile(priorFingerprint = ...) 扩展，向后兼容
-  - Onboarding 在已有画像时显示"重新画像 / 演化画像"分支
-  - prompt 包含旧画像中文结构化总结，明确"按近期对话权重漂移"
+- [~] **T28 / P10** 演化画像（旧画像 + 新对话） [M] — deps: T27 — **并入 T29 / P11**（v2 重做后演化是原生能力）
+  - 原计划：扩 PersonaProfiler.profile(priorFingerprint = ...) 接受可选旧画像
+  - 决定并入 P11：v2 重做 PersonaProfiler 时直接把"基于旧 B/C + 新对话演化"作为原生路径
+- [~] **T29 / P11** 画像 v2 — Persona + 语料 + 检索式 few-shot [L] — deps: T27
+  - [x] spec 落 `docs/ideas/persona-v2.md`
+  - [x] ADR-0005 `docs/adr/0005-persona-v2-representation.md`
+  - [ ] 用户审 spec + ADR → 通过后排详细 sub-task plan
+  - 范围预览（实施期细化）：
+    - PersonaProfiler 改造：除 6 维 JSON 外输出 behaviorRules 文本 + 30-80 条 corpus 样本
+    - 新增 CorpusStore（Room 表 style_corpus_samples）+ Migration 1→2
+    - 候选生成检索：BM25 + 场景标签（不上向量）
+    - CandidateGenerator 重写 prompt：行为规则常驻 + 检索 few-shot + 6 维精简版
+    - 演化路径：旧 B/C 一起喂 LLM 产出新 B/C
+    - 隐私护栏单测：CorpusStore 类型层只接 Message.Mine
 
 **Checkpoint M6**：T25 端到端冒烟、T27 重装回归、T28 演化对比验证、T26 spec 审通过、人工决策是否进 P1.a
 
