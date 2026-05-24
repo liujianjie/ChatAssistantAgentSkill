@@ -240,4 +240,50 @@ class SpeakerAlignerTest : StringSpec({
     "empty message list returns empty result" {
         SpeakerAligner(setOf("我")).align(emptyList()) shouldBe emptyList()
     }
+
+    // ---- Fuzzy matching (P1 fix) -------------------------------------------
+
+    "fuzzy: alias '张三' matches label '张三 13800138000' (digits stripped)" {
+        val aligner = SpeakerAligner(setOf("张三"))
+        val msgs = listOf(raw("张三 13800138000", "你好", 0))
+        aligner.align(msgs).single().speaker shouldBe SpeakerLabel.ME
+    }
+
+    "fuzzy: alias '我' matches label '我(admin)' (parens stripped)" {
+        val aligner = SpeakerAligner(setOf("我"))
+        val msgs = listOf(raw("我(admin)", "测试", 0))
+        aligner.align(msgs).single().speaker shouldBe SpeakerLabel.ME
+    }
+
+    "fuzzy: alias 'Lily' matches label 'Lily🌿' (emoji stripped)" {
+        val aligner = SpeakerAligner(setOf("Lily"))
+        val msgs = listOf(raw("Lily🌿", "hello", 0))
+        aligner.align(msgs).single().speaker shouldBe SpeakerLabel.ME
+    }
+
+    "fuzzy: alias 'Alice' matches label 'alice' (case-insensitive)" {
+        val aligner = SpeakerAligner(setOf("Alice"))
+        val msgs = listOf(raw("alice", "hi", 0))
+        aligner.align(msgs).single().speaker shouldBe SpeakerLabel.ME
+    }
+
+    "fuzzy: alias '我' does NOT false-match '我们' (token-level, not substring)" {
+        val aligner = SpeakerAligner(setOf("我"))
+        val msgs = listOf(raw("我们", "群发", 0))
+        aligner.align(msgs).single().speaker shouldBe SpeakerLabel.THEIRS
+    }
+
+    "fuzzy: alias '张' does NOT false-match '小张' (no substring fallback)" {
+        val aligner = SpeakerAligner(setOf("张"))
+        val msgs = listOf(raw("小张", "嗨", 0))
+        aligner.align(msgs).single().speaker shouldBe SpeakerLabel.THEIRS
+    }
+
+    "fuzzy: multi-token label '2024-01-15 张三 13800138000' picks ME via the 张三 token" {
+        // Note: PlainTextImportSource extracts speaker label, not the full line —
+        // but rawSpeakerLabel itself can contain a digit suffix as user reported.
+        val aligner = SpeakerAligner(setOf("张三"))
+        val msgs = listOf(raw("张三 13800138000", "周末干嘛", 0))
+        aligner.align(msgs).single().speaker shouldBe SpeakerLabel.ME
+    }
 })

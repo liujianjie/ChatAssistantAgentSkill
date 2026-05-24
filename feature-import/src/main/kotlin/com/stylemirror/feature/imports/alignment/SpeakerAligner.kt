@@ -1,6 +1,7 @@
 package com.stylemirror.feature.imports.alignment
 
 import com.stylemirror.feature.imports.source.RawMessage
+import java.util.Locale
 
 /**
  * Resolves the speaker of each [RawMessage] to [SpeakerLabel.ME] or
@@ -8,27 +9,29 @@ import com.stylemirror.feature.imports.source.RawMessage
  *
  * ## Algorithm (highest-priority first)
  *
- * 1. **Explicit alias match** — if `rawSpeakerLabel` is non-null and appears
- *    in [myAliases] (case-sensitive) → [SpeakerLabel.ME].
- * 2. **Explicit non-alias** — if `rawSpeakerLabel` is non-null and NOT in
- *    [myAliases] → [SpeakerLabel.THEIRS], with `displayName = rawSpeakerLabel`.
+ * 1. **Token match (case-insensitive)** — tokenize both the label and each
+ *    alias by stripping all non-letter characters (digits, whitespace,
+ *    punctuation, emoji, symbols), lowercase ASCII, then check whether any
+ *    label-token equals any alias-token. → [SpeakerLabel.ME].
+ * 2. **Explicit non-alias** — if `rawSpeakerLabel` is non-null and no token
+ *    matches → [SpeakerLabel.THEIRS], with `displayName = rawSpeakerLabel`.
  * 3. **Bare line inheritance** — if `rawSpeakerLabel` is null, inherit the
- *    previous message's [SpeakerLabel]. If this is the first message, default
- *    to [SpeakerLabel.THEIRS] (conservative: we'd rather mis-attribute the
- *    user's own message than send a stranger's message into the style fingerprint).
+ *    previous message's [SpeakerLabel]. First message defaults to
+ *    [SpeakerLabel.THEIRS] (conservative).
  *
- * ## Onboarding integration
+ * ## Why token match (not substring)
  *
- * The user specifies aliases during onboarding (T15). A single alias (e.g. "我")
- * is always sufficient; multiple aliases cover the cross-device / nickname-change
- * scenarios (SPEC §1.4).
- *
- * @param myAliases The set of display names / prefixes the user goes by.
- *   Matching is case-sensitive and exact. An empty set causes every message
- *   to be labelled [SpeakerLabel.THEIRS] (acceptable for the conservative
- *   "no fingerprint yet" bootstrap case).
+ * Substring would let alias "我" false-match label "我们" — too aggressive.
+ * Token match still handles the user's real complaints:
+ *   - `"张三 13800138000"` tokens → `["张三"]` → matches alias `"张三"`
+ *   - `"我(admin)"` tokens → `["我", "admin"]` → matches alias `"我"`
+ *   - `"Lily🌿"` tokens → `["lily"]` → matches alias `"Lily"`
+ * while preserving CJK word integrity (no character-level splitting).
  */
 class SpeakerAligner(val myAliases: Set<String>) {
+    private val aliasTokens: Set<String> =
+        myAliases.flatMap { tokenize(it) }.toSet()
+
     fun align(messages: List<RawMessage>): List<AlignedMessage> {
         var lastSpeaker: SpeakerLabel = SpeakerLabel.THEIRS
         return messages.map { msg ->
@@ -48,10 +51,10 @@ class SpeakerAligner(val myAliases: Set<String>) {
                 AlignedMessage(
                     rawMessage = msg,
                     speaker = lastSpeaker,
-                    displayName = if (lastSpeaker == SpeakerLabel.THEIRS) null else null,
+                    displayName = null,
                 )
 
-            label in myAliases ->
+            tokenize(label).any { it in aliasTokens } ->
                 AlignedMessage(rawMessage = msg, speaker = SpeakerLabel.ME, displayName = null)
 
             else ->
@@ -62,5 +65,13 @@ class SpeakerAligner(val myAliases: Set<String>) {
     companion object {
         /** Fraction of messages that may be mis-aligned before a corpus is rejected. */
         const val MAX_ERROR_RATE: Double = 0.02
+
+        /** Splits on any run of non-letter characters (Unicode-aware). */
+        private val NON_LETTER_REGEX = Regex("[^\\p{L}]+")
+
+        internal fun tokenize(s: String): List<String> =
+            s.split(NON_LETTER_REGEX)
+                .filter { it.isNotEmpty() }
+                .map { it.lowercase(Locale.ROOT) }
     }
 }
