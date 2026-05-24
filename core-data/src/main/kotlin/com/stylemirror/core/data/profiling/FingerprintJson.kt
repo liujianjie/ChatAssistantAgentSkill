@@ -40,7 +40,24 @@ object FingerprintJson {
             coerceInputValues = true
         }
 
+    /**
+     * Verbose form used when emitting JSON for human-visible export files
+     * (P9). Unlike [json], every field — even those at default values —
+     * appears in the output, so users opening the file can see the full
+     * 6-dimension profile without surprise gaps.
+     */
+    private val exportJson =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+            encodeDefaults = true
+            prettyPrint = true
+        }
+
     fun toJson(fp: StyleFingerprint): String = json.encodeToString(fp.toDto())
+
+    fun toJsonForExport(fp: StyleFingerprint): String = exportJson.encodeToString(fp.toDto())
 
     fun fromJson(text: String): StyleFingerprint {
         val jsonStart = text.indexOf('{')

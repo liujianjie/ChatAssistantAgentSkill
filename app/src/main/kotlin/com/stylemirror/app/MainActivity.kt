@@ -64,16 +64,57 @@ class MainActivity : ComponentActivity() {
     private fun OnboardingFlow() {
         var showSettings by rememberSaveable { mutableStateOf(false) }
         val apiKeyHint by viewModel.apiKeyHint.collectAsStateWithLifecycle()
+        val profileIoState by viewModel.profileIoState.collectAsStateWithLifecycle()
+
+        // SAF launchers wired here too so a returning user (重装/换机) can
+        // import an exported profile from the onboarding screen and skip
+        // re-doing onboarding entirely (P9 验收 #6).
+        val onboardingExportLauncher =
+            androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json"),
+            ) { uri: android.net.Uri? ->
+                if (uri != null) {
+                    viewModel.exportProfile { json ->
+                        contentResolver.openOutputStream(uri)?.use { stream ->
+                            stream.write(json.toByteArray(Charsets.UTF_8))
+                        } ?: error("无法写入所选位置")
+                    }
+                }
+            }
+        val onboardingImportLauncher =
+            androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+            ) { uri: android.net.Uri? ->
+                if (uri != null) {
+                    viewModel.importProfile {
+                        contentResolver.openInputStream(uri)?.use { stream ->
+                            stream.readBytes().toString(Charsets.UTF_8)
+                        } ?: error("无法读取所选文件")
+                    }
+                }
+            }
+
+        // When import succeeds during onboarding, advance to the main screen
+        // automatically so the user doesn't have to navigate back manually.
+        androidx.compose.runtime.LaunchedEffect(profileIoState) {
+            if (profileIoState is ProfileIoState.Success) {
+                routeViewModel.onProfileCreated()
+            }
+        }
 
         if (showSettings) {
             SettingsScreen(
                 apiKeyHint = apiKeyHint,
+                profileIoState = profileIoState,
                 onSave = { key ->
                     viewModel.saveApiKey(key)
                     showSettings = false
                 },
                 onClear = viewModel::clearApiKey,
                 onBack = { showSettings = false },
+                onExportProfile = { onboardingExportLauncher.launch(viewModel.suggestedExportFilename()) },
+                onImportProfile = { onboardingImportLauncher.launch(arrayOf("application/json", "*/*")) },
+                onDismissProfileIo = viewModel::dismissProfileIoState,
             )
             return
         }
@@ -141,12 +182,39 @@ class MainActivity : ComponentActivity() {
         val generateState by viewModel.generateState.collectAsStateWithLifecycle()
         val apiKeyHint by viewModel.apiKeyHint.collectAsStateWithLifecycle()
         val screenshotState by viewModel.screenshotState.collectAsStateWithLifecycle()
+        val profileIoState by viewModel.profileIoState.collectAsStateWithLifecycle()
 
         val photoPicker =
             androidx.activity.compose.rememberLauncherForActivityResult(
                 contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),
             ) { uri: android.net.Uri? ->
                 if (uri != null) viewModel.captureScreenshot(uri)
+            }
+
+        val exportLauncher =
+            androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json"),
+            ) { uri: android.net.Uri? ->
+                if (uri != null) {
+                    viewModel.exportProfile { json ->
+                        contentResolver.openOutputStream(uri)?.use { stream ->
+                            stream.write(json.toByteArray(Charsets.UTF_8))
+                        } ?: error("无法写入所选位置")
+                    }
+                }
+            }
+
+        val importLauncher =
+            androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+            ) { uri: android.net.Uri? ->
+                if (uri != null) {
+                    viewModel.importProfile {
+                        contentResolver.openInputStream(uri)?.use { stream ->
+                            stream.readBytes().toString(Charsets.UTF_8)
+                        } ?: error("无法读取所选文件")
+                    }
+                }
             }
 
         when (screen) {
@@ -184,12 +252,16 @@ class MainActivity : ComponentActivity() {
             AppScreen.SETTINGS ->
                 SettingsScreen(
                     apiKeyHint = apiKeyHint,
+                    profileIoState = profileIoState,
                     onSave = { key ->
                         viewModel.saveApiKey(key)
                         screen = AppScreen.MAIN
                     },
                     onClear = viewModel::clearApiKey,
                     onBack = { screen = AppScreen.MAIN },
+                    onExportProfile = { exportLauncher.launch(viewModel.suggestedExportFilename()) },
+                    onImportProfile = { importLauncher.launch(arrayOf("application/json", "*/*")) },
+                    onDismissProfileIo = viewModel::dismissProfileIoState,
                 )
 
             AppScreen.HISTORY -> {

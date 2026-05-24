@@ -60,6 +60,17 @@ sealed class ScreenshotState {
     data class Error(val message: String) : ScreenshotState()
 }
 
+/** UI state for the export/import-profile flow on the Settings screen (P9). */
+sealed class ProfileIoState {
+    data object Idle : ProfileIoState()
+
+    data object Working : ProfileIoState()
+
+    data class Success(val message: String) : ProfileIoState()
+
+    data class Error(val message: String) : ProfileIoState()
+}
+
 @HiltViewModel
 @Suppress("LongParameterList")
 class MainViewModel
@@ -84,6 +95,9 @@ class MainViewModel
 
         private val _screenshotState = MutableStateFlow<ScreenshotState>(ScreenshotState.Idle)
         val screenshotState: StateFlow<ScreenshotState> = _screenshotState.asStateFlow()
+
+        private val _profileIoState = MutableStateFlow<ProfileIoState>(ProfileIoState.Idle)
+        val profileIoState: StateFlow<ProfileIoState> = _profileIoState.asStateFlow()
 
         init {
             viewModelScope.launch { refreshApiKeyHint() }
@@ -199,6 +213,78 @@ class MainViewModel
 
         fun dismissScreenshotError() {
             _screenshotState.value = ScreenshotState.Idle
+        }
+
+        /**
+         * Exports the latest fingerprint as JSON via a caller-supplied [sink]
+         * (production wiring wraps a SAF Uri + ContentResolver around it; tests
+         * pass a string buffer). The ViewModel stays Uri-free.
+         */
+        fun exportProfile(sink: suspend (String) -> Unit) {
+            _profileIoState.value = ProfileIoState.Working
+            viewModelScope.launch {
+                runCatching {
+                    val json =
+                        com.stylemirror.core.data.profiling.ProfileExport.exportLatest(fingerprintStore)
+                    if (json == null) {
+                        _profileIoState.value = ProfileIoState.Error("尚未建立画像，请先完成 onboarding")
+                        return@launch
+                    }
+                    withContext(Dispatchers.IO) { sink(json) }
+                    _profileIoState.value = ProfileIoState.Success("画像已导出")
+                }.onFailure { e ->
+                    _profileIoState.value = ProfileIoState.Error("导出失败：${e.message ?: e::class.simpleName}")
+                }
+            }
+        }
+
+        /**
+         * Imports a fingerprint JSON via a caller-supplied [source] and writes
+         * it as a new version (does NOT overwrite existing history — old
+         * versions remain rollback-able from HistoryScreen).
+         */
+        fun importProfile(source: suspend () -> String) {
+            _profileIoState.value = ProfileIoState.Working
+            viewModelScope.launch {
+                val json =
+                    runCatching { withContext(Dispatchers.IO) { source() } }
+                        .getOrElse { e ->
+                            _profileIoState.value =
+                                ProfileIoState.Error("读取文件失败：${e.message ?: e::class.simpleName}")
+                            return@launch
+                        }
+                when (
+                    val r =
+                        com.stylemirror.core.data.profiling.ProfileExport.importJson(
+                            store = fingerprintStore,
+                            json = json,
+                        )
+                ) {
+                    is com.stylemirror.core.data.profiling.ImportResult.Success ->
+                        _profileIoState.value =
+                            ProfileIoState.Success("已导入为 V${r.newVersion}（${r.sampleSize} 条样本）")
+                    is com.stylemirror.core.data.profiling.ImportResult.EmptyJson ->
+                        _profileIoState.value = ProfileIoState.Error("文件内容为空")
+                    is com.stylemirror.core.data.profiling.ImportResult.InvalidJson ->
+                        _profileIoState.value = ProfileIoState.Error("文件不是有效的 JSON：${r.reason}")
+                    is com.stylemirror.core.data.profiling.ImportResult.NotAFingerprint ->
+                        _profileIoState.value = ProfileIoState.Error("文件不是有效的画像（缺少样本数据）")
+                }
+            }
+        }
+
+        fun dismissProfileIoState() {
+            _profileIoState.value = ProfileIoState.Idle
+        }
+
+        /** Default file name suggestion for SAF CreateDocument. */
+        fun suggestedExportFilename(): String {
+            val ts =
+                java.time.format.DateTimeFormatter
+                    .ofPattern("yyyyMMdd-HHmmss")
+                    .withZone(java.time.ZoneId.systemDefault())
+                    .format(Instant.now())
+            return "style-mirror-profile-$ts.json"
         }
 
         private suspend fun decodeBitmapFromUri(uri: Uri): Bitmap? =
