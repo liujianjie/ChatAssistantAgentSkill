@@ -44,6 +44,35 @@ class MessageSamplerTest : StringSpec({
         result.myMessages.map { it.content } shouldBe listOf("a", "c")
     }
 
+    // ---- char budget cap (the timeout root-cause fix) -----------------------
+
+    "sample respects maxCharBudget by dropping to evenly-spaced N within budget" {
+        // 100 messages × 100 chars each = 10000 total; budget 1000 → ~10 keep.
+        val sampler = MessageSampler(maxSamples = 1000, maxCharBudget = 1000)
+        val msgs = (0 until 100).map { me("x".repeat(100), it) }
+        val result = sampler.sample(msgs)
+        result.myMessages.sumOf { it.content.length }.let { total ->
+            withClue("kept total chars must fit budget") { (total <= 1000) shouldBe true }
+        }
+        result.totalAvailable shouldBe 100
+        // We must keep at least 1, well below 100, and roughly close to budget/100 = 10.
+        (result.totalSampled in 5..20) shouldBe true
+    }
+
+    "sample within budget keeps all messages" {
+        val sampler = MessageSampler(maxSamples = 1000, maxCharBudget = 10_000)
+        val msgs = (0 until 50).map { me("xx", it) }
+        val result = sampler.sample(msgs)
+        result.totalSampled shouldBe 50
+    }
+
+    "single message longer than maxSingleLength is truncated before sampling" {
+        val sampler = MessageSampler(maxSingleLength = 10, maxSamples = 100, maxCharBudget = 10_000)
+        val msgs = listOf(me("0123456789ABCDE", 0)) // 15 chars
+        val result = sampler.sample(msgs)
+        result.myMessages.single().content shouldBe "0123456789"
+    }
+
     "all-THEIRS input produces empty ProfilingInput" {
         val sampler = MessageSampler()
         val msgs = listOf(theirs("x", 0), theirs("y", 1))

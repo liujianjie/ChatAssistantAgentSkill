@@ -79,6 +79,13 @@ class NetworkClientTest : FunSpec({
         client.connectTimeoutMillis shouldBe 10_000
     }
 
+    test("profiling client uses the 90 s budget for one-shot LLM JSON output") {
+        val client = NetworkModule.profilingClient()
+        client.readTimeoutMillis shouldBe 90_000
+        client.writeTimeoutMillis shouldBe 90_000
+        client.connectTimeoutMillis shouldBe 10_000
+    }
+
     test("retrofitBuilder wires base url, client, and JSON converter") {
         val server = MockWebServer().apply { start() }
         try {

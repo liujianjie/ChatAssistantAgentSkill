@@ -40,7 +40,21 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideLlmProvider(keyStore: SecureKeyStore): LLMProvider = DeepSeekProvider.create(keyStore = keyStore)
+    @CandidateLlm
+    fun provideCandidateLlmProvider(keyStore: SecureKeyStore): LLMProvider =
+        DeepSeekProvider.create(
+            keyStore = keyStore,
+            client = com.stylemirror.infra.net.NetworkModule.candidateGenerationClient(),
+        )
+
+    @Provides
+    @Singleton
+    @ProfilingLlm
+    fun provideProfilingLlmProvider(keyStore: SecureKeyStore): LLMProvider =
+        DeepSeekProvider.create(
+            keyStore = keyStore,
+            client = com.stylemirror.infra.net.NetworkModule.profilingClient(),
+        )
 
     @Provides
     @Singleton
@@ -79,7 +93,7 @@ object AppModule {
     @Provides
     @Singleton
     fun providePersonaProfiler(
-        llmProvider: LLMProvider,
+        @ProfilingLlm llmProvider: LLMProvider,
         repository: StyleFingerprintStore,
         corpusStore: CorpusSampleStore,
     ): PersonaProfiler =
@@ -97,7 +111,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideCandidateGenerator(
-        llmProvider: LLMProvider,
+        @CandidateLlm llmProvider: LLMProvider,
         styleEngine: StyleEngine,
         corpusRetriever: CorpusRetriever,
     ): CandidateGenerator =

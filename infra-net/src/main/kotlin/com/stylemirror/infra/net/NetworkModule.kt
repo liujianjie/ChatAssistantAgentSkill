@@ -29,6 +29,8 @@ public object NetworkModule {
     private const val CANDIDATE_READ_WRITE_TIMEOUT_MS = 8_000L
     private const val DEFAULT_CONNECT_TIMEOUT_MS = 10_000L
     private const val DEFAULT_READ_WRITE_TIMEOUT_MS = 30_000L
+    private const val PROFILING_CONNECT_TIMEOUT_MS = 10_000L
+    private const val PROFILING_READ_WRITE_TIMEOUT_MS = 90_000L
 
     /** JSON payloads from third-party APIs grow new fields constantly; we
      *  refuse to break the app over an unknown field. */
@@ -60,6 +62,20 @@ public object NetworkModule {
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .readTimeout(DEFAULT_READ_WRITE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .writeTimeout(DEFAULT_READ_WRITE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .build()
+
+    /**
+     * Profiling client — 90 s read/write to accommodate large onboarding
+     * payloads (PersonaProfiler / IncrementalLearner) where the LLM emits
+     * thousands of structured-JSON tokens. The user is in a one-shot
+     * "building my profile" flow and won't perceive 60-90 s as a stall as
+     * long as we show a progress indicator (Stage.PROFILING).
+     */
+    public fun profilingClient(logger: HttpLoggingInterceptor.Logger = RedactingHttpLogger()): OkHttpClient =
+        baseBuilder(logger)
+            .connectTimeout(PROFILING_CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .readTimeout(PROFILING_READ_WRITE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .writeTimeout(PROFILING_READ_WRITE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .build()
 
     /**
