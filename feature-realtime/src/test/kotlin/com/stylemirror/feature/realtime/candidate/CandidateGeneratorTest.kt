@@ -1,5 +1,7 @@
 package com.stylemirror.feature.realtime.candidate
 
+import com.stylemirror.core.data.db.entity.CorpusSampleEntity
+import com.stylemirror.core.data.repository.CorpusSampleStore
 import com.stylemirror.domain.candidate.Candidate
 import com.stylemirror.domain.conversation.ConversationContext
 import com.stylemirror.domain.conversation.Message
@@ -9,6 +11,9 @@ import com.stylemirror.domain.error.DomainError
 import com.stylemirror.domain.error.ImportFailureReason
 import com.stylemirror.domain.error.Outcome
 import com.stylemirror.feature.realtime.matching.FakeStyleEngine
+import com.stylemirror.feature.realtime.matching.PersonaSnapshot
+import com.stylemirror.feature.realtime.matching.StyleEngine
+import com.stylemirror.feature.realtime.retrieval.CorpusRetriever
 import com.stylemirror.infra.llm.FakeLLMProvider
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
@@ -16,7 +21,9 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.floats.shouldBeBetween
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.coroutines.flow.emptyFlow
 import java.time.Instant
 
 private val PARTNER = PartnerId("p-test")
@@ -184,7 +191,98 @@ class CandidateGeneratorTest : StringSpec({
         val result = generator.generate(ctx)
         result shouldBe Outcome.Err(llmError)
     }
+
+    // ---------- v2 prompt selection (画像 v2) ----------
+
+    "v2 prompt is used when behaviorRules is non-empty AND retriever wired" {
+        val capturedPrompts = mutableListOf<String>()
+        val v2Engine =
+            object : StyleEngine {
+                override suspend fun getFingerprint() = Outcome.Ok(FakeStyleEngine.DEFAULT_FINGERPRINT)
+
+                override suspend fun getSnapshot() =
+                    Outcome.Ok(
+                        PersonaSnapshot(
+                            fingerprint = FakeStyleEngine.DEFAULT_FINGERPRINT,
+                            behaviorRules = "## 我的风格\n- 高频「确实」「行吧」",
+                            fingerprintVersion = 7,
+                        ),
+                    )
+            }
+        val corpus =
+            listOf(
+                corpusSample("行吧，下次再约", scenario = "拒绝", version = 7),
+                corpusSample("确实挺有道理", scenario = "表态", version = 7),
+            )
+        val generator =
+            CandidateGenerator(
+                llmProvider =
+                    FakeLLMProvider { p, n ->
+                        capturedPrompts += p
+                        Outcome.Ok(List(n) { Candidate("ok") })
+                    },
+                styleEngine = v2Engine,
+                corpusRetriever = CorpusRetriever(FakeCorpusStore(corpus)),
+            )
+        generator.generate(buildContext(theirLines = listOf("一会去吃饭吗")))
+
+        val prompt = capturedPrompts.single()
+        prompt.shouldContain("用户的说话规则")
+        prompt.shouldContain("高频「确实」「行吧」")
+        prompt.shouldContain("用户在不同场景下的真实回复")
+    }
+
+    "v1 prompt fallback when behaviorRules is empty (legacy fingerprint)" {
+        val capturedPrompts = mutableListOf<String>()
+        // FakeStyleEngine's default getSnapshot wraps behaviorRules = ""
+        val generator =
+            CandidateGenerator(
+                llmProvider =
+                    FakeLLMProvider { p, n ->
+                        capturedPrompts += p
+                        Outcome.Ok(List(n) { Candidate("ok") })
+                    },
+                styleEngine = FakeStyleEngine(),
+                corpusRetriever = CorpusRetriever(FakeCorpusStore(emptyList())),
+            )
+        generator.generate(buildContext(theirLines = listOf("你好")))
+
+        val prompt = capturedPrompts.single()
+        prompt.shouldContain("用户风格画像") // v1 marker
+        // v2 markers must NOT be present
+        (prompt.contains("用户的说话规则")) shouldBe false
+        (prompt.contains("用户在不同场景下的真实回复")) shouldBe false
+    }
 })
+
+private fun corpusSample(
+    text: String,
+    scenario: String,
+    version: Int,
+) = CorpusSampleEntity(
+    fingerprintVersion = version,
+    text = text,
+    scenario = scenario,
+    createdAtEpochMs = 0L,
+)
+
+private class FakeCorpusStore(private val samples: List<CorpusSampleEntity>) : CorpusSampleStore {
+    override suspend fun insertAll(samples: List<CorpusSampleEntity>) = samples.indices.map { it.toLong() }
+
+    override suspend fun findActiveByVersion(version: Int) =
+        samples.filter { it.fingerprintVersion == version && it.deletedAtEpochMs == null }
+
+    override suspend fun findAllByVersion(version: Int) = samples.filter { it.fingerprintVersion == version }
+
+    override fun observeActiveByVersion(version: Int) = emptyFlow<List<CorpusSampleEntity>>()
+
+    override suspend fun softDelete(
+        rowId: Long,
+        nowEpochMs: Long,
+    ) = 0
+
+    override suspend fun undelete(rowId: Long) = 0
+}
 
 // ---------- helpers ----------
 

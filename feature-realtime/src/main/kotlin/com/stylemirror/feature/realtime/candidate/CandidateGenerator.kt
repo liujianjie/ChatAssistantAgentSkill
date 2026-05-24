@@ -1,5 +1,6 @@
 package com.stylemirror.feature.realtime.candidate
 
+import com.stylemirror.core.data.db.entity.CorpusSampleEntity
 import com.stylemirror.domain.candidate.Candidate
 import com.stylemirror.domain.conversation.ConversationContext
 import com.stylemirror.domain.conversation.Message
@@ -8,26 +9,35 @@ import com.stylemirror.domain.error.Outcome
 import com.stylemirror.domain.error.map
 import com.stylemirror.domain.style.StyleFingerprint
 import com.stylemirror.feature.realtime.matching.FakeStyleEngine
+import com.stylemirror.feature.realtime.matching.PersonaSnapshot
 import com.stylemirror.feature.realtime.matching.StyleEngine
+import com.stylemirror.feature.realtime.retrieval.CorpusRetriever
 import com.stylemirror.infra.llm.LLMProvider
 
 /**
- * Assembles a provider-agnostic prompt from the conversation context and
- * user style fingerprint, calls [llmProvider], and returns up to [candidateCount]
- * enriched [Candidate]s each with a [Candidate.styleMatchScore].
+ * Assembles the prompt and calls [llmProvider] for [candidateCount] candidates.
  *
- * Privacy constraints (enforced before the prompt leaves the device):
- *  1. Only the last [maxTheirMessages] messages from the other party are
- *     included — hard cap regardless of conversation length.
- *  2. All "theirs" messages are passed through [PrivacyGuard.redact] to strip
- *     phone numbers, national IDs, and bank card numbers.
- *  3. The user's own messages are **never** sent to the LLM (they are used
- *     only to derive the fingerprint via T14; the fingerprint is embedded as
- *     structured text, not raw chat).
+ * **v1 vs v2 prompt selection** (画像 v2 / ADR-0005):
+ * - When the snapshot has a non-empty [PersonaSnapshot.behaviorRules] AND a
+ *   [corpusRetriever] is wired, the **v2** prompt is used: behaviorRules +
+ *   retrieved corpus few-shot + their messages + 6-dim summary.
+ * - Otherwise (v1 fingerprints, or no retriever), falls back to the v1
+ *   structured-summary-only prompt so users on legacy data still get output.
+ *
+ * **Privacy invariants**:
+ *  1. Only the last [maxTheirMessages] messages from the other party reach
+ *     the prompt (hard cap).
+ *  2. All "theirs" content is filtered through [PrivacyGuard.redact] for
+ *     phone / id-card / bank-card numbers.
+ *  3. Corpus samples are passed through [PrivacyGuard.redact] too — even
+ *     though [CorpusSampleStore] only accepts [Message.Mine] content, we
+ *     re-scrub at the prompt boundary as a defence-in-depth.
+ *  4. No raw user message ever leaves the device through the v1 path.
  */
 class CandidateGenerator(
     private val llmProvider: LLMProvider,
     private val styleEngine: StyleEngine = FakeStyleEngine(),
+    private val corpusRetriever: CorpusRetriever? = null,
     private val candidateCount: Int = LLMProvider.DEFAULT_N,
     /** Maximum number of "theirs" messages included in the LLM prompt. */
     val maxTheirMessages: Int = DEFAULT_MAX_THEIR_MESSAGES,
@@ -38,60 +48,89 @@ class CandidateGenerator(
                 DomainError.ImportFailure(reason = com.stylemirror.domain.error.ImportFailureReason.EMPTY_INPUT),
             )
         }
-        val fingerprint =
-            when (val r = styleEngine.getFingerprint()) {
+        val snapshot =
+            when (val r = styleEngine.getSnapshot()) {
                 is Outcome.Ok -> r.value
                 is Outcome.Err -> return r
             }
-        val prompt = buildPrompt(context, fingerprint)
+        val theirRecent = recentTheirsRedacted(context)
+        val samples =
+            if (snapshot.behaviorRules.isNotBlank() && corpusRetriever != null) {
+                corpusRetriever.retrieve(
+                    fingerprintVersion = snapshot.fingerprintVersion,
+                    theirRecentMessages = theirRecent,
+                )
+            } else {
+                emptyList()
+            }
+        val prompt = buildPrompt(snapshot, theirRecent, samples)
         return llmProvider.generateCandidates(prompt, n = candidateCount)
-            .map { candidates -> attachStyleScore(candidates, fingerprint) }
+            .map { candidates -> attachStyleScore(candidates, snapshot.fingerprint) }
     }
 
     /**
-     * Builds a provider-agnostic prompt string. The prompt does NOT contain
-     * vendor-specific tokens (system role wrappers, function-call schema, etc.)
-     * — those belong inside each [LLMProvider] implementation.
-     *
-     * Structure:
-     *   1. Brief task framing (one sentence)
-     *   2. User style summary (all six dimensions as readable key-value pairs)
-     *   3. Recent conversation tail — "theirs" only, privacy-filtered, capped
-     *      at [maxTheirMessages]
-     *   4. Request for exactly [candidateCount] reply suggestions
+     * Builds the LLM prompt. v2 path when [snapshot.behaviorRules] is
+     * non-empty; otherwise v1 fallback.
      */
     internal fun buildPrompt(
-        context: ConversationContext,
-        fingerprint: StyleFingerprint,
-    ): String {
-        val theirSnippet = buildTheirSnippet(context)
-        val styleSummary = buildStyleSummary(fingerprint)
-        return buildString {
-            appendLine("你是一个风格镜像助手。请根据以下用户风格画像，为用户生成 $candidateCount 条候选回复。")
+        snapshot: PersonaSnapshot,
+        theirRecent: List<String>,
+        retrievedSamples: List<CorpusSampleEntity>,
+    ): String =
+        if (snapshot.behaviorRules.isNotBlank()) {
+            buildV2Prompt(snapshot, theirRecent, retrievedSamples)
+        } else {
+            buildV1Prompt(snapshot.fingerprint, theirRecent)
+        }
+
+    private fun buildV2Prompt(
+        snapshot: PersonaSnapshot,
+        theirRecent: List<String>,
+        retrievedSamples: List<CorpusSampleEntity>,
+    ): String =
+        buildString {
+            appendLine("你是一个风格镜像助手。请按下面这位用户的真实说话方式，生成 $candidateCount 条候选回复。")
             appendLine()
-            appendLine("【用户风格画像】")
-            appendLine(styleSummary)
+            appendLine("【用户的说话规则】")
+            appendLine(snapshot.behaviorRules.trim())
             appendLine()
+            if (retrievedSamples.isNotEmpty()) {
+                appendLine("【用户在不同场景下的真实回复（请仿照这种语感、长度、用词，不要直接复读原话）】")
+                retrievedSamples.forEach { s ->
+                    appendLine("[${s.scenario}] ${PrivacyGuard.redact(s.text)}")
+                }
+                appendLine()
+            }
             appendLine("【对方最近消息（已脱敏）】")
-            appendLine(theirSnippet)
+            appendLine(if (theirRecent.isEmpty()) "（暂无对方消息）" else theirRecent.joinToString("\n"))
+            appendLine()
+            appendLine("【辅助风格指标】")
+            appendLine(buildStyleSummary(snapshot.fingerprint))
             appendLine()
             append("请直接输出 $candidateCount 条候选回复，每条单独一行，不加编号、前缀或解释。")
         }
-    }
 
-    /** Returns last [maxTheirMessages] "Theirs" messages, privacy-filtered. */
-    internal fun buildTheirSnippet(context: ConversationContext): String {
-        val recent =
-            context.theirMessages
-                .takeLast(maxTheirMessages)
-        return if (recent.isEmpty()) {
-            "（暂无对方消息）"
-        } else {
-            recent.joinToString(separator = "\n") { msg ->
-                PrivacyGuard.redact((msg as Message.Theirs).content)
-            }
+    private fun buildV1Prompt(
+        fingerprint: StyleFingerprint,
+        theirRecent: List<String>,
+    ): String =
+        buildString {
+            appendLine("你是一个风格镜像助手。请根据以下用户风格画像，为用户生成 $candidateCount 条候选回复。")
+            appendLine()
+            appendLine("【用户风格画像】")
+            appendLine(buildStyleSummary(fingerprint))
+            appendLine()
+            appendLine("【对方最近消息（已脱敏）】")
+            appendLine(if (theirRecent.isEmpty()) "（暂无对方消息）" else theirRecent.joinToString("\n"))
+            appendLine()
+            append("请直接输出 $candidateCount 条候选回复，每条单独一行，不加编号、前缀或解释。")
         }
-    }
+
+    /** Last [maxTheirMessages] "Theirs" messages, privacy-redacted. */
+    internal fun recentTheirsRedacted(context: ConversationContext): List<String> =
+        context.theirMessages
+            .takeLast(maxTheirMessages)
+            .map { msg -> PrivacyGuard.redact((msg as Message.Theirs).content) }
 
     private fun buildStyleSummary(fp: StyleFingerprint): String =
         buildString {
@@ -103,14 +142,6 @@ class CandidateGenerator(
             append("敏感话题处理：${fp.sensitive.directness} / ${fp.sensitive.approach}")
         }
 
-    /**
-     * Attaches a [Candidate.styleMatchScore] to each candidate.
-     *
-     * Until the real scoring algorithm lands in T14, every candidate receives
-     * the [FakeStyleEngine.FIXED_MATCH_SCORE] as a placeholder. When a real
-     * [StyleEngine] is plugged in, this method can compare the candidate text
-     * against the fingerprint and assign a per-candidate score.
-     */
     private fun attachStyleScore(
         candidates: List<Candidate>,
         @Suppress("UNUSED_PARAMETER") fingerprint: StyleFingerprint,

@@ -39,6 +39,40 @@ class RoomBackedStyleEngine(
             }
     }
 
+    /**
+     * v2 — overrides the default to also surface [behaviorRules] from the
+     * row, so CandidateGenerator can build the v2 prompt without a second
+     * round trip to the DB.
+     */
+    override suspend fun getSnapshot(): Outcome<PersonaSnapshot, DomainError> {
+        val entity =
+            repository.findLatest()
+                ?: return Outcome.Err(
+                    DomainError.InsufficientProfile(
+                        collectedSamples = 0,
+                        required = MIN_SAMPLES_REQUIRED,
+                    ),
+                )
+        return runCatching { FingerprintJson.fromJson(entity.fingerprintJson) }
+            .map { fp ->
+                Outcome.Ok(
+                    PersonaSnapshot(
+                        fingerprint = fp,
+                        behaviorRules = entity.behaviorRules,
+                        fingerprintVersion = entity.version,
+                    ),
+                )
+            }
+            .getOrElse { e ->
+                Outcome.Err(
+                    DomainError.LlmFailure(
+                        com.stylemirror.domain.error.LlmFailureReason.INVALID_RESPONSE,
+                        cause = e,
+                    ),
+                )
+            }
+    }
+
     companion object {
         private const val MIN_SAMPLES_REQUIRED = 10
     }

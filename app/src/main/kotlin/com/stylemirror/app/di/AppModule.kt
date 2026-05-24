@@ -15,6 +15,7 @@ import com.stylemirror.feature.realtime.candidate.CandidateGenerator
 import com.stylemirror.feature.realtime.input.ScreenshotInput
 import com.stylemirror.feature.realtime.matching.RoomBackedStyleEngine
 import com.stylemirror.feature.realtime.matching.StyleEngine
+import com.stylemirror.feature.realtime.retrieval.CorpusRetriever
 import com.stylemirror.infra.llm.LLMProvider
 import com.stylemirror.infra.llm.deepseek.DeepSeekProvider
 import com.stylemirror.infra.ocr.OcrProvider
@@ -90,10 +91,21 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideCorpusRetriever(corpusStore: CorpusSampleStore): CorpusRetriever =
+        CorpusRetriever(corpusStore = corpusStore)
+
+    @Provides
+    @Singleton
     fun provideCandidateGenerator(
         llmProvider: LLMProvider,
         styleEngine: StyleEngine,
-    ): CandidateGenerator = CandidateGenerator(llmProvider = llmProvider, styleEngine = styleEngine)
+        corpusRetriever: CorpusRetriever,
+    ): CandidateGenerator =
+        CandidateGenerator(
+            llmProvider = llmProvider,
+            styleEngine = styleEngine,
+            corpusRetriever = corpusRetriever,
+        )
 
     @Provides
     @Singleton
