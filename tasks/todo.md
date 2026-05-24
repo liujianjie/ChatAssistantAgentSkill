@@ -50,8 +50,8 @@
 ## Phase 3 — M2 StyleEngine v1
 
 - [ ] **T09** core-data Room + SQLCipher [M] — deps: T02, T04
-- [ ] **T10** ImportSource 抽象 + 纯文本导入 [M] — deps: T02, T09
-- [ ] **T11** 数据清洗 [S] — deps: T03, T10
+- [x] **T10** ImportSource 抽象 + 纯文本导入 [M] — deps: T02, T09
+- [x] **T11** 数据清洗 [S] — deps: T03, T10
 - [ ] **T12** 说话人对齐（大规模） [M] — deps: T11
 - [ ] **T13** 采样与聚合 [S] — deps: T12
 - [ ] **T14** 性格画像提取 + 真 StyleEngine [M] — deps: T05, T13
