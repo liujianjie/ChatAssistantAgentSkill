@@ -40,6 +40,7 @@ fun MainScreen(
     onModify: (CandidateItem, String) -> Unit,
     onDiscard: (CandidateItem) -> Unit,
     onOpenSettings: () -> Unit,
+    onReprofile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(16.dp)) {
@@ -49,7 +50,10 @@ fun MainScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("风格镜像", style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = onOpenSettings) { Text("设置") }
+            androidx.compose.foundation.layout.Row {
+                TextButton(onClick = onReprofile) { Text("重新画像") }
+                TextButton(onClick = onOpenSettings) { Text("设置") }
+            }
         }
 
         Spacer(Modifier.height(12.dp))

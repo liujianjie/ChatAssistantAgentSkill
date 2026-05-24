@@ -53,9 +53,14 @@
 - [x] **T10** ImportSource 抽象 + 纯文本导入 [M] — deps: T02, T09
 - [x] **T11** 数据清洗 [S] — deps: T03, T10
 - [x] **T12** 说话人对齐（大规模） [M] — deps: T11
-- [ ] **T13** 采样与聚合 [S] — deps: T12
-- [ ] **T14** 性格画像提取 + 真 StyleEngine [M] — deps: T05, T13
-- [ ] **T15** Onboarding UI 串联 + 主页接真画像 [M] — deps: T08, T14
+- [x] **T13** 采样与聚合 [S] — deps: T12
+- [x] **T14** 性格画像提取 + 真 StyleEngine [M] — deps: T05, T13
+- [x] **T15** Onboarding UI 串联 + 主页接真画像 [M] — deps: T08, T14
+  - [x] OnboardingViewModel 编排管线（PlainTextImportSource → MessageCleaner → SpeakerAligner → MessageSampler → PersonaProfiler）
+  - [x] 3 步 Compose UI（别名 → 粘贴 → 进度/总结）+ 6 维中文画像总结
+  - [x] AppRouteViewModel 启动路由（无画像→onboarding，有画像→main，主页"重新画像"入口）
+  - [x] DI 切到 RoomBackedStyleEngine + DatabasePassphraseProvider 装配
+  - [x] OnboardingViewModelTest 7 项（FakeLLMProvider，Ready/Error/InsufficientProfile/AUTH 路径）
 
 **Checkpoint M2**：错位率 < 2%、画像命中率 ≥ 75%、类型层面隐私保护、人工评审
 
