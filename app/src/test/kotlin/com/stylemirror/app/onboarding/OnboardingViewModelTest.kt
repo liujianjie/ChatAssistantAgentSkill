@@ -6,6 +6,7 @@ import com.stylemirror.domain.candidate.Candidate
 import com.stylemirror.domain.error.DomainError
 import com.stylemirror.domain.error.LlmFailureReason
 import com.stylemirror.domain.error.Outcome
+import com.stylemirror.domain.security.SecureKeyStore
 import com.stylemirror.feature.imports.profiling.PersonaProfiler
 import com.stylemirror.infra.llm.FakeLLMProvider
 import io.kotest.core.spec.style.StringSpec
@@ -60,8 +61,24 @@ private fun corpusOf(messageCount: Int): String =
         }
     }
 
-private fun newViewModel(profiler: PersonaProfiler): OnboardingViewModel =
-    OnboardingViewModel(personaProfiler = profiler)
+private fun newViewModel(
+    profiler: PersonaProfiler,
+    keyStore: SecureKeyStore = stubKeyStore(apiKey = "fake-key"),
+): OnboardingViewModel = OnboardingViewModel(personaProfiler = profiler, keyStore = keyStore)
+
+private fun stubKeyStore(apiKey: String?): SecureKeyStore =
+    object : SecureKeyStore {
+        override suspend fun put(
+            name: String,
+            value: String,
+        ) = Unit
+
+        override suspend fun get(name: String): String? = apiKey
+
+        override suspend fun remove(name: String) = Unit
+
+        override suspend fun clearAll() = Unit
+    }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest : StringSpec({
@@ -191,6 +208,47 @@ class OnboardingViewModelTest : StringSpec({
             state.shouldBeInstanceOf<OnboardingState.Error>()
             state.message shouldContain "文件导入失败"
             state.message shouldContain "文件过大"
+        }
+    }
+
+    "runProfiling 在没有 API Key 时立刻 Error，不调用 LLM" {
+        runTest(testDispatcher) {
+            val store = StubStore()
+            var llmCalls = 0
+            val llm =
+                FakeLLMProvider { _, _ ->
+                    llmCalls++
+                    Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON)))
+                }
+            val vm = newViewModel(PersonaProfiler(llm, store), keyStore = stubKeyStore(apiKey = null))
+
+            vm.onAliasesChange("我")
+            vm.onPasteChange(corpusOf(15))
+            vm.runProfiling()
+            testScheduler.advanceUntilIdle()
+
+            val state = vm.state.value
+            state.shouldBeInstanceOf<OnboardingState.Error>()
+            state.message shouldContain "API Key"
+            llmCalls shouldBe 0
+            store.inserted.size shouldBe 0
+        }
+    }
+
+    "runProfiling 在 API Key 为空白时也立刻 Error" {
+        runTest(testDispatcher) {
+            val store = StubStore()
+            val llm = FakeLLMProvider { _, _ -> Outcome.Ok(listOf(Candidate(text = VALID_PROFILE_JSON))) }
+            val vm = newViewModel(PersonaProfiler(llm, store), keyStore = stubKeyStore(apiKey = "   "))
+
+            vm.onAliasesChange("我")
+            vm.onPasteChange(corpusOf(15))
+            vm.runProfiling()
+            testScheduler.advanceUntilIdle()
+
+            val state = vm.state.value
+            state.shouldBeInstanceOf<OnboardingState.Error>()
+            state.message shouldContain "API Key"
         }
     }
 })

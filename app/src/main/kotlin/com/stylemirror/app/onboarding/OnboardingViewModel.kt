@@ -2,9 +2,11 @@ package com.stylemirror.app.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.stylemirror.app.MainViewModel
 import com.stylemirror.domain.error.DomainError
 import com.stylemirror.domain.error.LlmFailureReason
 import com.stylemirror.domain.error.Outcome
+import com.stylemirror.domain.security.SecureKeyStore
 import com.stylemirror.domain.style.StyleFingerprint
 import com.stylemirror.feature.imports.alignment.SpeakerAligner
 import com.stylemirror.feature.imports.cleaning.MessageCleaner
@@ -47,6 +49,7 @@ class OnboardingViewModel
     @Inject
     constructor(
         private val personaProfiler: PersonaProfiler,
+        private val keyStore: SecureKeyStore,
     ) : ViewModel() {
         private val _state = MutableStateFlow<OnboardingState>(OnboardingState.AskAliases)
         val state: StateFlow<OnboardingState> = _state.asStateFlow()
@@ -88,6 +91,8 @@ class OnboardingViewModel
             }
 
             viewModelScope.launch {
+                if (!ensureApiKeyPresent()) return@launch
+
                 _state.value = OnboardingState.Working(Stage.IMPORTING)
                 val raw =
                     runCatching {
@@ -132,6 +137,29 @@ class OnboardingViewModel
                             OnboardingState.Error(domainErrorMessage(result.error, sampled.totalSampled))
                 }
             }
+        }
+
+        /**
+         * Pre-flight check before kicking off the profiling pipeline.
+         *
+         * Self-use feedback: a missing API Key was masked by an upstream
+         * alignment bug that caused InsufficientProfile to fire first; we now
+         * surface the missing-key state explicitly so users don't run the full
+         * pipeline only to fail at the LLM call.
+         *
+         * @return true if a non-blank key is present, false (and sets Error
+         * state) otherwise.
+         */
+        private suspend fun ensureApiKeyPresent(): Boolean {
+            val apiKey = keyStore.get(name = MainViewModel.API_KEY_STORE_NAME)
+            if (apiKey.isNullOrBlank()) {
+                _state.value =
+                    OnboardingState.Error(
+                        "尚未设置 DeepSeek API Key。请先返回主页 → 设置 → 填入 Key 后再开始画像。",
+                    )
+                return false
+            }
+            return true
         }
 
         fun resetToAskAliases() {
