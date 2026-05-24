@@ -4,6 +4,7 @@
 plugins {
     id("stylemirror.android.library")
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -34,6 +35,9 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
     implementation(libs.sqlcipher)
+
+    // JSON serialization for FingerprintJson (avoids org.json Android-only dep)
+    implementation(libs.kotlinx.serialization.json)
 
     // --- Unit test stack (Robolectric so we can exercise the real Android
     //     SharedPreferences + Tink keystore on a desktop JVM). RobolectricTestRunner
