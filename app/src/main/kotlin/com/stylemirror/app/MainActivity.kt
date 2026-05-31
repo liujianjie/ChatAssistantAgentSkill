@@ -262,6 +262,7 @@ class MainActivity : ComponentActivity() {
                     onExportProfile = { exportLauncher.launch(viewModel.suggestedExportFilename()) },
                     onImportProfile = { importLauncher.launch(arrayOf("application/json", "*/*")) },
                     onDismissProfileIo = viewModel::dismissProfileIoState,
+                    overlaySection = { com.stylemirror.app.ui.OverlaySettingsSection() },
                 )
 
             AppScreen.HISTORY -> {

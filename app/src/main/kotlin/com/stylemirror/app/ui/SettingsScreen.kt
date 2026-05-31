@@ -40,6 +40,7 @@ fun SettingsScreen(
     onImportProfile: () -> Unit,
     onDismissProfileIo: () -> Unit,
     modifier: Modifier = Modifier,
+    overlaySection: (@Composable () -> Unit)? = null,
 ) {
     var draft by remember { mutableStateOf("") }
 
@@ -135,6 +136,13 @@ fun SettingsScreen(
                 )
                 TextButton(onClick = onDismissProfileIo) { Text("关闭") }
             }
+        }
+
+        if (overlaySection != null) {
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            overlaySection()
         }
     }
 }
