@@ -56,11 +56,12 @@ class StyleMirrorAccessibilityService : AccessibilityService() {
         try {
             val tree = root.toNodeView()
             // Parse → publish to repository (production path).
-            val ctx = SoulNodeMatchers.parse(
-                root = tree,
-                screenWidth = resolveScreenWidth(),
-                now = Instant::now,
-            )
+            val ctx =
+                SoulNodeMatchers.parse(
+                    root = tree,
+                    screenWidth = resolveScreenWidth(),
+                    now = Instant::now,
+                )
             if (ctx != null) {
                 OverlaySnapshotRepository.publish(ctx)
                 if (isDebuggable()) {

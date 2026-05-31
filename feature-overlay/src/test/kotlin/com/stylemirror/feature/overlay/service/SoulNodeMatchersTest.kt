@@ -86,11 +86,12 @@ class SoulNodeMatchersTest : StringSpec({
                 ),
             )
         val ctx = SoulNodeMatchers.parse(tree, SCREEN_W, FIXED_NOW).shouldNotBeNull()
-        ctx.messages.map { it.content } shouldBe listOf(
-            "第一条 Theirs",
-            "第二条 Theirs",
-            "第三条 Mine",
-        )
+        ctx.messages.map { it.content } shouldBe
+            listOf(
+                "第一条 Theirs",
+                "第二条 Theirs",
+                "第三条 Mine",
+            )
     }
 
     "synthesized sentAt is monotonically non-decreasing" {
@@ -183,11 +184,12 @@ class SoulNodeMatchersTest : StringSpec({
             )
         val ctx = SoulNodeMatchers.parse(tree, SCREEN_W, FIXED_NOW).shouldNotBeNull()
         ctx.messages.shouldHaveSize(1)
-        ctx.messages.first() shouldBe Message.Mine(
-            id = ctx.messages.first().id,
-            content = "nested mine",
-            sentAt = ctx.messages.first().sentAt,
-        )
+        ctx.messages.first() shouldBe
+            Message.Mine(
+                id = ctx.messages.first().id,
+                content = "nested mine",
+                sentAt = ctx.messages.first().sentAt,
+            )
     }
 
     "screenWidth <= 0 returns null" {

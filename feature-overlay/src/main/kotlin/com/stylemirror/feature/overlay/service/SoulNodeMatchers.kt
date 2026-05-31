@@ -99,6 +99,7 @@ internal object SoulNodeMatchers {
 
     private fun collectTextNodes(root: NodeView): List<NodeView> {
         val out = mutableListOf<NodeView>()
+
         fun walk(node: NodeView) {
             if (isUsableMessageNode(node)) out += node
             node.children.forEach(::walk)
