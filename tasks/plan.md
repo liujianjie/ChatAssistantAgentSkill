@@ -59,7 +59,8 @@ build-logic (gradle convention plugins)
 | 4 | M3 OCR + Soul | T16–T19 | 截图导入 + Soul 实时识别 |
 | 5 | M4 反馈环闭合 | T20–T21 | 反馈信号增量更新画像 |
 | 6 | M5 自用验证 | T22–T24 | 性能基线 + 自用 1 周观察期 |
-| 7 | M6 修补 + P1 序章 | T25–T28（P7-P10）| Bug 修 + 画像可移植/可演化 + P1 悬浮窗 spec |
+| 7 | M6 修补 + P1 序章 | T25–T29（P7-P11）| Bug 修 + 画像可移植/演化/v2 + P1 悬浮窗 spec |
+| 8 | M7 P1.c 实时悬浮窗 | T30.1–T30.8 | feature-overlay 端到端：Soul → 气泡 → 3 候选 |
 
 ---
 
@@ -493,20 +494,140 @@ build-logic (gradle convention plugins)
 
 #### T29（P11）：画像 v2 — Persona + 语料 + 检索式 few-shot
 **Description**：见 `docs/ideas/persona-v2.md` + ADR-0005。当前 6 维 enum 信息密度过低，候选 prompt 中画像段落仅约 70 字，LLM 生成质量显著低于参考项目（zhangxuefeng-skill / ex-skill-web）。重做画像表示：① 保留 6 维做 UI/隐私护栏 ② 新增行为规则文本 200-500 字 ③ 新增语料样本库 30-80 条按场景分类。候选生成接入检索式 few-shot。
-**Acceptance criteria**：见 spec 验收清单。
-**Verification**：spec 评审通过 → 排详细 sub-task → TDD 流程实施。
-**Dependencies**：T27（导出/导入需要兼容 v2 schema 含 behaviorRules + corpus 字段）
-**Files**：
-  - 实现期独立 plan 项落到 `tasks/plan.md` Phase 8 — 待 spec 评审通过后再写
-  - 涉及模块：core-data（schema/migration）、feature-import（PersonaProfiler）、feature-realtime（CandidateGenerator + Retriever）、app（UI）
-**Scope**：L（拆 sub-task 后每个 ≤ M）
+**拆分（每个 sub-task 独立 commit + 测试）**：
+
+| Sub | 内容 | 估时 | 依赖 |
+|---|---|---|---|
+| T29.1 | 数据层：StyleFingerprintEntity 加 behaviorRules + 新建 CorpusSampleEntity/Dao/Repo + Migration 1→2 | 半天 | T27 |
+| T29.2 | PersonaProfiler 改造：一次 LLM 调用输出 6 维 + behaviorRules + corpus samples（≥30 条 ≥5 场景） | 1 天 | T29.1 |
+| T29.3 | CorpusRetriever：场景标签 + 关键词匹配（不上 BM25/向量），top-N 召回 | 半天 | T29.1 |
+| T29.4 | CandidateGenerator 重写 prompt：行为规则 + 检索 few-shot + 6 维精简，behaviorRules 空时退化 v1 | 半天 | T29.2, T29.3 |
+| T29.5 | Onboarding UI 演化分支：已有画像时显示"重新画像 / 演化画像"，演化把旧 B/C 一起喂 | 半天 | T29.2 |
+| T29.6 | 语料管理 UI：HistoryScreen 旁加 corpus tab，按场景分组，软删除 | 半天 | T29.1 |
+| T29.7 | ProfileExport 兼容 v2：JSON 含 behaviorRules + corpus；导入 v1 时退化提示用户演化 | 半天 | T29.1, T27 |
+
+**Acceptance criteria**：见 spec 验收清单（end-to-end candidates 至少 3/5 段更像本人）。
+**Verification**：每 sub-task TDD + `./gradlew check` 全绿；最终人工抽样对照 v1 vs v2 候选质量。
+**Dependencies**：T27（导出 v2 schema 兼容）
+**Scope**：L（已拆 7 个 ≤ S/M sub-task）
 
 #### Checkpoint：M6 完成
 - [ ] T25 端到端冒烟通过（候选生成不再 INVALID_RESPONSE）
 - [ ] T27 重装回归测试：卸载 → 重装 → 导入 JSON → 不需要重新做 onboarding
-- [ ] T28 演化画像至少有 1 次自用验证（自用观察对画像偏移是否合理）
-- [ ] T26 spec 已审通过，P1.a 进入下一轮 plan
-- [ ] **人工决策**：进入 P1.a 详细 plan，还是继续打磨 M6 成果
+- [ ] T29 候选质量人工评估：v2 prompt 在 5 段对照样本中至少 3 段更像本人
+- [ ] T26 spec 已审通过
+- [ ] **人工决策**：进入 P1.c 实施（Phase 8 — T30 系列），还是先继续打磨 M6 成果
+
+---
+
+### Phase 8 — M7 P1.c 实时悬浮窗（跳过 P1.a/P1.b 直接接 Accessibility）
+
+> 自用反馈触发：手动粘贴体验拉胯。`docs/ideas/p1-floating-window.md` 原本建议先 P1.a → P1.b → P1.c，但用户决定跳到 P1.c——理由是自用阶段不上 Play、Accessibility 审查暂不阻塞，且只需 Soul 单平台适配即可。
+> 红线复用：对方消息只发最近 N 条 + 敏感数字脱敏（与 P0 一致，不重写）。Me 的消息不上送 LLM。
+> 模块新增：`feature-overlay`（依赖 `core-domain` + `feature-realtime`，不依赖 OCR/Import）。
+
+#### T30.1 + T30.2：feature-overlay 模块骨架 + manifest + 字符串资源
+**Description**：新建 `feature-overlay` 模块（android.library + compose convention）。声明 `BIND_ACCESSIBILITY_SERVICE` / `SYSTEM_ALERT_WINDOW` / `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_SPECIAL_USE` / `POST_NOTIFICATIONS`。`accessibility_service_config.xml` 静态包名先填 Soul 默认（`cn.soulapp.android`），运行时由 `setServiceInfo` 覆盖（T30.7）。中文 strings 全部走 res/values/strings.xml。
+**Acceptance criteria**：
+- [x] 模块在 settings.gradle.kts 注册，app 模块依赖通过
+- [x] `./gradlew :feature-overlay:assembleDebug` 通过（仅骨架，无业务）
+- [x] AndroidManifest 声明的权限与 docs/p1c-permission-setup.md 描述一致
+**Verification**：
+- [x] `./gradlew :feature-overlay:check`
+**Dependencies**：T26（spec 已审）
+**Files**：`feature-overlay/build.gradle.kts`、`feature-overlay/src/main/AndroidManifest.xml`、`feature-overlay/src/main/res/values/strings.xml`、`feature-overlay/src/main/res/xml/accessibility_service_config.xml`、`settings.gradle.kts`、`gradle/libs.versions.toml`
+**Scope**：S
+
+#### T30.3：StyleMirrorAccessibilityService + NodeTreeDumper（debug-only logcat dump）
+**Description**：实装最薄的 `AccessibilityService` — 只在 `BuildConfig.DEBUG`（FLAG_DEBUGGABLE）下，1Hz 节流地把 Soul 活动窗口的节点树打印到 logcat。**这一步不解析、不写仓库、不送 LLM**——目的是在开发者真机上拿到 Soul UI 的真实节点 ID/边界，作为 T30.4 SoulNodeMatchers 的设计依据。
+**Acceptance criteria**：
+- [x] 仅 typeWindowContentChanged / typeWindowStateChanged 两类事件
+- [x] 1000ms 节流（避免每个滚动帧/键盘字符都 dump）
+- [x] release build 不 dump（debug 门把守）
+- [x] dump 失败不崩服务（catch Throwable + recycle）
+- [x] 文本预览截断 60 字 + 行尾 ⏎ 替换，每节点单行
+**Verification**：
+- [x] 真机 debug APK 装上 → 开 Soul 对话页 → `adb logcat -s StyleMirrorOverlay` 能看到节点树
+- [ ] release build 装机 → logcat 中 LOG_TAG 无任何输出
+**Dependencies**：T30.1
+**Files**：`feature-overlay/.../service/StyleMirrorAccessibilityService.kt`、`feature-overlay/.../service/NodeTreeDumper.kt`
+**Scope**：S
+
+#### T30.4：SoulNodeMatchers 解析 → ConversationContext + OverlaySnapshotRepository
+**Description**：基于 T30.3 拿到的真机 dump 设计匹配器。`SoulNodeMatchers.parse(root)` 接收节点根 → 输出 `ConversationContext`（含 Speaker.Me / Speaker.Other 标注）。判别规则（按优先级，可叠加）：① RecyclerView 内的消息行容器 ② 文本节点的 boundsInScreen 水平居右 → Me，居左 → Other ③ 头像/泡泡背景色作为辅助判别。`OverlaySnapshotRepository`：单例 + `MutableSharedFlow<ConversationContext>` + replay=1。AccessibilityService 把 parse 结果写入仓库（沿用 1Hz 节流）。**单测覆盖** fake AccessibilityNodeInfo 树：空对话 / 单条 / 长滚动 / 我方/对方混排 / 边界（图片/语音节点忽略）。
+**Acceptance criteria**：
+- [ ] 5 段自制 fake 节点树，Me/Other 错位 0 条
+- [ ] OverlaySnapshotRepository 暴露 `latest: SharedFlow<ConversationContext>`，replay=1
+- [ ] parse 失败返回 `null`（不抛），Service 跳过本次更新
+- [ ] **隐私护栏单测**：parse 仅产 Speaker.Me / Speaker.Other 标签，不混入图片/语音/系统提示
+**Verification**：
+- [ ] `./gradlew :feature-overlay:test`
+- [ ] 真机：开 Soul 对话页 → `adb logcat -s StyleMirrorSnapshot` 看到 ConversationContext 序列化日志（debug only）
+**Dependencies**：T30.3、T18（SoulPlatformAdapter 复用判别经验）
+**Files**：`feature-overlay/.../service/SoulNodeMatchers.kt`、`feature-overlay/.../service/OverlaySnapshotRepository.kt`、`feature-overlay/src/test/...`
+**Scope**：M
+
+#### T30.5：FloatingBubbleService 前台服务 + BubbleHost ComposeView in WindowManager
+**Description**：前台服务（`specialUse` + property 子类型 `floating chat assistant overlay`）维持气泡寿命；`BubbleHost` 把 `ComposeView` 挂到 `WindowManager` 的 `TYPE_APPLICATION_OVERLAY` 层，自管 LifecycleOwner / ViewModelStoreOwner / SavedStateRegistryOwner 三件套（`OverlayLifecycleOwner`）。拖拽在 View 层处理（TouchSlop 区分 click vs drag），Compose 仅渲染。两种气泡形态 stub（CIRCLE / SIDE_STRIP）。
+**Acceptance criteria**：
+- [x] `BubbleHost.show()` 后气泡在 Soul 之上可见
+- [x] 拖拽流畅（updateViewLayout x/y 实时跟随）
+- [x] 点击触发 onClick 回调（T30.6 替换为候选触发）
+- [x] `hide()` 后无 leak（OverlayLifecycleOwner.stop → DESTROYED + ViewModelStore.clear）
+**Verification**：
+- [x] 真机 debug 装上 + 开服务 → 气泡可拖拽、点击 logcat 出现 placeholder
+- [ ] LeakCanary（如已接入）确认服务停止后 ComposeView 不泄漏
+**Dependencies**：T30.1
+**Files**：`feature-overlay/.../service/FloatingBubbleService.kt`、`feature-overlay/.../ui/BubbleHost.kt`、`feature-overlay/.../ui/OverlayLifecycleOwner.kt`、`feature-overlay/.../ui/BubbleStyle.kt`、`feature-overlay/.../ui/BubbleVisuals.kt`
+**Scope**：M
+
+#### T30.6：OverlayCandidateController — 点气泡触发候选生成 + 候选面板 UI
+**Description**：`OverlayCandidateController`：从 `OverlaySnapshotRepository.latest` 拉一帧 ConversationContext → 调 `CandidateGenerator`（**复用 P0 链路**，不重写 prompt 模板）→ 状态机暴露 `idle / loading / ready(candidates) / error`。BubbleHost 在点击时调 controller，气泡 Compose UI 从单纯气泡切换为"气泡 + 候选面板"（候选 3 张 + 一键复制 + 关闭按钮）。再次点气泡或 5 分钟无操作 → 收回到气泡形态。**复用 P0 隐私护栏**（对方消息最近 N 条 + 敏感数字脱敏）——通过依赖 CandidateGenerator 直接得到，不在悬浮窗里重写。
+**Acceptance criteria**：
+- [ ] 点气泡 ≤ 3s 看到 3 候选（用 FakeLLMProvider 单测验证逻辑；真 API 真机验证延迟）
+- [ ] 候选点击复制到剪贴板 + Toast "已复制"
+- [ ] OverlaySnapshotRepository 为空（用户还没打开 Soul 对话页）时点气泡显示 "没有捕获到对话"，不调 LLM
+- [ ] 候选面板可关闭/收回为气泡
+- [ ] 错误态展示 P0 已有的错误文案（HTTP code 透传）
+**Verification**：
+- [ ] `./gradlew :feature-overlay:test`（FakeLLMProvider 跑端到端逻辑）
+- [ ] 真机：Soul 对话页 → 点气泡 → 候选 3 条
+- [ ] 隐私单测复用 T07 的脱敏断言（不重新写）
+**Dependencies**：T30.4、T30.5、T07（CandidateGenerator）、T05（LLMProvider）
+**Files**：`feature-overlay/.../candidate/OverlayCandidateController.kt`、`feature-overlay/.../ui/CandidatePanel.kt`、`feature-overlay/src/test/...`
+**Scope**：M
+
+#### T30.7：SettingsScreen 注入 OverlaySettingsSection + 权限引导文档
+**Description**：在 app 模块加 `OverlaySettingsSection`（直接驱动 Activity 域 service start/stop 与系统 Settings intent，不放在 feature-overlay 模块）。注入到 `SettingsScreen` 的 `overlaySection` 插槽。OverlayConfigStore 以 SharedPreferences 持久化（非密钥，无加密）。OverlayPermissionProbe 提供两个权限的纯读探针，每次 ON_RESUME 重探。文档 `docs/p1c-permission-setup.md` 覆盖：开两个权限的步骤 / Why / 成功标志 / 常见卡点 / 关掉怎么办。
+**Acceptance criteria**：
+- [x] 设置页可见悬浮窗副驾区，含总开关 + 两条权限状态行 + 两种气泡形态切换 + Soul 包名输入
+- [x] 缺权限时总开关 disabled，显示红色提示
+- [x] 系统 Settings 跳转回来 ON_RESUME 自动刷新状态
+- [x] `docs/p1c-permission-setup.md` 已落，4 步 + Why + 成功标志 + 3 条卡点 + 关掉指南
+**Verification**：
+- [ ] 真机：缺权限 → 跳转 → 回来状态变绿
+- [ ] 文档抽查：每步带 Why、有成功标志
+**Dependencies**：T30.5、T30.4 不阻塞（UI 可独立先行）
+**Files**：`app/.../ui/OverlaySettingsSection.kt`、`feature-overlay/.../config/OverlayConfigStore.kt`（含 OverlayPermissionProbe）、`app/.../ui/SettingsScreen.kt`、`app/.../MainActivity.kt`、`docs/p1c-permission-setup.md`
+**Scope**：S
+
+#### T30.8：自用 1 周观察 + 气泡形态 A/B 默认收口（合并原 T30.9）
+**Description**：自用 7 天，每天记录：① 主动召唤气泡频次 ② 候选采纳率（vs 手动粘贴对照） ③ 气泡形态 A/B 偏好 ④ Bug。第 7 天根据数据敲定默认 BubbleStyle（写到 OverlayConfigStore.bubbleStyle 默认值）。
+**Acceptance criteria**：
+- [ ] 7 天日报落 `docs/dogfood/p1c-dayN.md`
+- [ ] 每天 ≥ 5 次主动召唤（达不到则视 P1.c 投入未回本，进入"是否回退做 P1.a"决策）
+- [ ] 默认气泡形态有数据支撑的决策记录
+**Verification**：人工
+**Dependencies**：T30.6、T30.7
+**Files**：`docs/dogfood/p1c-day1.md` ~ `p1c-day7.md`、`feature-overlay/.../config/OverlayConfigStore.kt`（仅默认值改动）
+**Scope**：S（跨度 1 周）
+
+#### Checkpoint：M7 完成
+- [ ] feature-overlay 完整端到端：开 Soul → 看到气泡 → 点气泡 → 3 候选 → 复制采纳
+- [ ] 主动召唤频次 ≥ 5 次/天（达不到要决策回退）
+- [ ] 隐私红线零违反：release build 不 dump、Me 的消息不上送 LLM、敏感数字脱敏
+- [ ] 默认气泡形态收口
+- [ ] **人工决策**：是否补 P1.a（系统分享 sheet）作为 fallback，或进入下一阶段（P2 跨平台 / 微信适配）
 
 ---
 

@@ -19,13 +19,15 @@ dependencyResolutionManagement {
 
 rootProject.name = "style-mirror-copilot"
 
-// 10 application modules per SPEC §3.1. Order is informational only — Gradle
-// resolves the dependency graph from each module's build.gradle.kts.
+// 10 application modules per SPEC §3.1 + feature-overlay (P1.c). Order is
+// informational only — Gradle resolves the dependency graph from each
+// module's build.gradle.kts.
 include(":app")
 include(":core-domain")
 include(":core-data")
 include(":feature-import")
 include(":feature-realtime")
+include(":feature-overlay")
 include(":platform-soul")
 include(":platform-stub")
 include(":infra-llm")

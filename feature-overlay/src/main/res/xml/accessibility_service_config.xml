@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Static base config. The runtime packageNames filter is overridden in
+    StyleMirrorAccessibilityService.onServiceConnected via setServiceInfo()
+    so the user-configurable Soul package id (T30.7 OverlayConfigStore) takes
+    effect without rebuilding the APK.
+
+    canRetrieveWindowContent: required to read the in-foreground window's
+    text nodes — that is the one capability we actually need.
+
+    flagDefault | flagRequestFilterKeyEvents are NOT set: we do not need key
+    events, only content. Less surface area = less user-perceived risk.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault|flagRetrieveInteractiveWindows"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/p1c_accessibility_service_description"
+    android:notificationTimeout="200"
+    android:packageNames="cn.soulapp.android" />

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="p1c_accessibility_service_label">StyleMirror 悬浮窗副驾</string>
+    <string name="p1c_accessibility_service_description">读取 Soul 对话页的消息文本，给你生成 3 条匹配你风格的候选回复。仅在你点击悬浮气泡时才会发起调用，绝不主动弹出。</string>
+</resources>

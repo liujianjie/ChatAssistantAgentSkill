@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":infra-ocr"))
     implementation(project(":feature-realtime"))
     implementation(project(":feature-import"))
+    implementation(project(":feature-overlay"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
