@@ -2,4 +2,8 @@
 <resources>
     <string name="p1c_accessibility_service_label">StyleMirror 悬浮窗副驾</string>
     <string name="p1c_accessibility_service_description">读取 Soul 对话页的消息文本，给你生成 3 条匹配你风格的候选回复。仅在你点击悬浮气泡时才会发起调用，绝不主动弹出。</string>
+    <string name="p1c_foreground_service_channel_name">悬浮窗副驾</string>
+    <string name="p1c_foreground_service_channel_description">悬浮气泡在前台时显示的常驻通知。</string>
+    <string name="p1c_foreground_notification_title">风格镜像副驾运行中</string>
+    <string name="p1c_foreground_notification_text">点击气泡获取候选回复</string>
 </resources>

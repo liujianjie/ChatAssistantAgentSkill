@@ -18,7 +18,14 @@ dependencies {
     implementation(project(":core-domain"))
     implementation(project(":feature-realtime"))
     implementation(libs.kotlinx.coroutines.android)
+
+    // Wiring required to host a ComposeView inside WindowManager (T30.5).
+    // setViewTreeLifecycleOwner / setViewTreeViewModelStoreOwner /
+    // setViewTreeSavedStateRegistryOwner each live in a separate artifact.
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.savedstate.ktx)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotest.runner.junit5)
