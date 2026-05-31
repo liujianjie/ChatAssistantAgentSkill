@@ -17,6 +17,10 @@ credentials.*
 *token*.json
 *.token
 
+# === User-exported style profiles (含真实画像，绝不入库) ===
+backup/
+style-mirror-profile-*.json
+
 # === Local dev config ===
 local.properties
 !local.properties.example
