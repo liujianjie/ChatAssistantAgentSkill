@@ -16,9 +16,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 /**
- * Stub renderings of the floating bubble. Both forms are click-only here;
- * T30.6 wires the click to OverlayCandidateController. Painted at 50–60%
- * alpha so the bubble does not steal attention from the underlying app.
+ * Two visual forms for the floating bubble. Open question in the P1.c spec
+ * (docs/ideas/p1-floating-window.md §开放问题). T30.5 ships both as stubs so
+ * the user can A/B them on a real device before T30.8 picks the default;
+ * T30.7 wires the choice to OverlayConfigStore.
+ *
+ * Both forms render at 50–60% alpha so the bubble does not steal attention
+ * from the underlying app.
  */
 @Composable
 internal fun BubbleVisual(
@@ -59,26 +63,4 @@ private fun SideStripBubble(modifier: Modifier) {
                 .clip(RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp))
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
     )
-}
-
-/**
- * Placeholder candidate panel. T30.6 replaces the body with the actual
- * 3-candidate list bound to OverlayCandidateController.
- */
-@Composable
-internal fun CandidatePanelPlaceholder(modifier: Modifier = Modifier) {
-    Box(
-        modifier =
-            modifier
-                .size(width = 280.dp, height = 160.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "候选生成接入中…\n(T30.6 实装)",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
 }

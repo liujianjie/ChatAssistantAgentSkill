@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.asSharedFlow
  * survives across app launches, but only as long as the OS keeps the
  * process alive — there is no flush-to-disk path).
  */
-internal object OverlaySnapshotRepository {
+object OverlaySnapshotRepository {
     private val _latest = MutableSharedFlow<ConversationContext>(replay = 1, extraBufferCapacity = 1)
 
     val latest: SharedFlow<ConversationContext> = _latest.asSharedFlow()

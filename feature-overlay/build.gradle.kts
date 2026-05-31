@@ -31,6 +31,7 @@ dependencies {
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.kotest.assertions.core)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(project(":infra-llm")) // FakeLLMProvider for OverlayCandidateController tests
 }
 
 tasks.withType<Test>().configureEach {

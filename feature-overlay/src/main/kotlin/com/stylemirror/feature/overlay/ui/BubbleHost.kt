@@ -1,6 +1,8 @@
 package com.stylemirror.feature.overlay.ui
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
@@ -9,38 +11,45 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
-import androidx.compose.runtime.Composable
+import android.widget.Toast
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.stylemirror.feature.overlay.candidate.OverlayCandidateController
 import kotlin.math.abs
 
 /**
- * Owns the lifecycle of the floating bubble window: creates the
+ * Owns the lifecycle of the floating overlay window: creates the
  * [ComposeView], wires the view-tree owner trio, attaches it to
  * [WindowManager] with a TYPE_APPLICATION_OVERLAY layer, and translates raw
- * touches into either a click (tap-within-slop) or a drag (move-window-to).
+ * touches over the bubble into either a click (tap-within-slop, triggers
+ * the controller) or a drag (move-window-to).
  *
- * **Why drag is implemented at the View layer, not in Compose**
+ * **Tap vs drag at the View layer**
  *
- * Compose's `pointerInput` only sees gestures inside the composed UI; moving
- * the bubble means moving the `WindowManager` view itself, which Compose has
- * no handle on. The cleanest split is:
- *  - View-layer [View.OnTouchListener] decides "click vs drag" and updates
- *    [WindowManager.LayoutParams.x/y].
- *  - Compose handles only the visual rendering, not the gesture.
+ * Compose's `pointerInput` only sees gestures inside the composed UI;
+ * moving the bubble means moving the `WindowManager` view itself, which
+ * Compose has no handle on. The cleanest split is:
+ *  - View-layer [View.OnTouchListener] decides "click vs drag" while the
+ *    state is collapsed. If a tap happens, [OverlayCandidateController.trigger]
+ *    runs; the panel rendered for non-Idle states uses Compose onClick.
+ *  - When the panel is open, the touch listener returns `false` so Compose
+ *    sees the events — that means dragging is disabled while expanded,
+ *    which is intentional (user closes the panel, then drags).
  *
- * **Why we manually own the lifecycle**
+ * **Lifecycle**
  *
  * [ComposeView] requires a [androidx.lifecycle.LifecycleOwner],
  * [androidx.lifecycle.ViewModelStoreOwner] and
- * [androidx.savedstate.SavedStateRegistryOwner] in its view tree. A bare
- * `Service` is not any of these. [OverlayLifecycleOwner] supplies all three.
+ * [androidx.savedstate.SavedStateRegistryOwner]. A bare `Service` is none
+ * of those — [OverlayLifecycleOwner] supplies the trio.
  */
 internal class BubbleHost(
     private val context: Context,
-    private val onClick: () -> Unit,
+    private val controller: OverlayCandidateController,
 ) {
     private var composeView: ComposeView? = null
     private var lifecycleOwner: OverlayLifecycleOwner? = null
@@ -55,7 +64,13 @@ internal class BubbleHost(
                 setViewTreeViewModelStoreOwner(owner)
                 setViewTreeSavedStateRegistryOwner(owner)
                 setContent {
-                    BubbleSurface(style = style)
+                    val state by controller.state.collectAsState()
+                    BubbleStack(
+                        style = style,
+                        state = state,
+                        onCopy = ::copyToClipboard,
+                        onDismiss = controller::dismiss,
+                    )
                 }
             }
         owner.start()
@@ -74,7 +89,7 @@ internal class BubbleHost(
                 y = INITIAL_Y_DP_FROM_TOP
             }
 
-        attachDragListener(view, params)
+        attachTouchListener(view, params)
         windowManager().addView(view, params)
         composeView = view
         lifecycleOwner = owner
@@ -86,7 +101,7 @@ internal class BubbleHost(
         try {
             windowManager().removeView(view)
         } catch (e: IllegalArgumentException) {
-            android.util.Log.d("StyleMirrorOverlay", "removeView no-op: ${e.message}")
+            android.util.Log.d(TAG, "removeView no-op: ${e.message}")
         }
         lifecycleOwner?.stop()
         composeView = null
@@ -95,7 +110,7 @@ internal class BubbleHost(
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun attachDragListener(
+    private fun attachTouchListener(
         view: View,
         params: WindowManager.LayoutParams,
     ) {
@@ -107,6 +122,11 @@ internal class BubbleHost(
         var isDragging = false
 
         view.setOnTouchListener { _, event ->
+            // While the panel is open, let Compose handle taps on its
+            // buttons — drag is intentionally disabled in that mode.
+            if (controller.state.value !is OverlayCandidateController.UiState.Idle) {
+                return@setOnTouchListener false
+            }
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     downX = event.rawX
@@ -130,12 +150,18 @@ internal class BubbleHost(
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!isDragging) onClick()
+                    if (!isDragging) controller.trigger()
                     true
                 }
                 else -> false
             }
         }
+    }
+
+    private fun copyToClipboard(candidate: com.stylemirror.domain.candidate.Candidate) {
+        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+        cm.setPrimaryClip(ClipData.newPlainText("StyleMirror candidate", candidate.text))
+        Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
     }
 
     private fun windowManager(): WindowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -149,15 +175,8 @@ internal class BubbleHost(
         }
 
     companion object {
+        private const val TAG = "StyleMirrorOverlay"
         private const val INITIAL_X_DP_FROM_RIGHT: Int = 24
         private const val INITIAL_Y_DP_FROM_TOP: Int = 240
     }
-}
-
-@Composable
-private fun BubbleSurface(style: BubbleStyle) {
-    // T30.5 stub: tap is wired at the View layer (BubbleHost.onClick) and
-    // goes to the service. T30.6 swaps this composable for one that toggles
-    // between the bubble and the candidate panel based on host state.
-    BubbleVisual(style = style)
 }
