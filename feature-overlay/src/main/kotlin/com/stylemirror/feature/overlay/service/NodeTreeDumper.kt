@@ -1,13 +1,10 @@
 package com.stylemirror.feature.overlay.service
 
-import android.graphics.Rect
-import android.view.accessibility.AccessibilityNodeInfo
-
 /**
- * Pretty-prints an [AccessibilityNodeInfo] tree as an indented multiline
- * string. Used by [StyleMirrorAccessibilityService] in debug builds to dump
- * Soul's UI hierarchy to logcat so we can design the SoulNodeMatchers (T30.4)
- * with real data.
+ * Pretty-prints a [NodeView] tree as an indented multiline string. Used by
+ * [StyleMirrorAccessibilityService] in debug builds to dump Soul's UI
+ * hierarchy to logcat so we can tighten the [SoulNodeMatchers] heuristics
+ * with real-device data.
  *
  * Output line format (one per node):
  *   `<indent><idx> [<class>] id=<viewId|-> bounds=<l,t,r,b> text=<truncated>`
@@ -29,49 +26,37 @@ import android.view.accessibility.AccessibilityNodeInfo
 internal object NodeTreeDumper {
     private const val TEXT_PREVIEW_LIMIT = 60
     private const val INDENT = "  "
-    private const val MAX_DEPTH = 30
 
-    fun dump(root: AccessibilityNodeInfo?): String {
-        if (root == null) return "<null root>"
+    fun dump(treeFor: NodeView?): String {
+        if (treeFor == null) return "<null root>"
         val sb = StringBuilder()
-        appendNode(sb, root, depth = 0, idx = 0)
+        appendNode(sb, treeFor, depth = 0, idx = 0)
         return sb.toString()
     }
 
     private fun appendNode(
         sb: StringBuilder,
-        node: AccessibilityNodeInfo,
+        node: NodeView,
         depth: Int,
         idx: Int,
     ) {
-        if (depth > MAX_DEPTH) {
-            sb.append(INDENT.repeat(depth)).append("…(max depth)\n")
-            return
-        }
         repeat(depth) { sb.append(INDENT) }
         sb.append(idx).append(' ')
-        sb.append('[').append(node.className?.let { simpleClassName(it.toString()) } ?: "?").append(']')
+        sb.append('[').append(node.className?.let { simpleClassName(it) } ?: "?").append(']')
         sb.append(" id=").append(node.viewIdResourceName ?: "-")
         sb.append(" bounds=").append(boundsString(node))
-        node.text?.toString()?.takeIf { it.isNotEmpty() }?.let {
+        node.text?.takeIf { it.isNotEmpty() }?.let {
             sb.append(" text=").append(previewText(it))
             sb.append(" (len=").append(it.length).append(')')
         }
         sb.append('\n')
-        val childCount = node.childCount
-        for (i in 0 until childCount) {
-            val child = node.getChild(i) ?: continue
-            try {
-                appendNode(sb, child, depth + 1, i)
-            } finally {
-                child.recycle()
-            }
+        node.children.forEachIndexed { i, child ->
+            appendNode(sb, child, depth + 1, i)
         }
     }
 
-    private fun boundsString(node: AccessibilityNodeInfo): String {
-        val r = Rect()
-        node.getBoundsInScreen(r)
+    private fun boundsString(node: NodeView): String {
+        val r = node.boundsInScreen
         return "${r.left},${r.top},${r.right},${r.bottom}"
     }
 
